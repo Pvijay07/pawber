@@ -1,0 +1,773 @@
+[
+  {
+    "path": "/health",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/auth/signup",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/auth/signin",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/auth/refresh",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/auth/me",
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/auth/signout",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/bookings",
+    "methods": [
+      "POST",
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/bookings/:id",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/bookings/:id/cancel",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/bookings/:id/status",
+    "methods": [
+      "PATCH"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/services/categories",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/services",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/services/:id",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/services/:serviceId/packages",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/services/:serviceId/addons",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/pets",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/pets/:id",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/wallet",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/wallet/transactions",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/wallet/add-funds",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/wallet/pay",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/wallet/auto-recharge",
+    "methods": [
+      "PATCH"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/events",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/events/:id",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/events/:id/purchase",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/events/me/tickets",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/events/tickets/validate",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/notifications",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/notifications/read-all",
+    "methods": [
+      "PATCH"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/notifications/:id/read",
+    "methods": [
+      "PATCH"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/notifications/:id",
+    "methods": [
+      "DELETE"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/reviews/provider/:providerId",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/reviews",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/reviews/:id/reply",
+    "methods": [
+      "PATCH"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/:id",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/register",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/me",
+    "methods": [
+      "PATCH",
+      "GET"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/me/documents",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/me/bookings",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/me/services",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/:id/services",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/:id/bookings",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/:id/bids",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/:id/blocked-dates",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/blocked-dates/:blockedDateId",
+    "methods": [
+      "DELETE"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/:id/performance",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/:id/wallet",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/:id/transactions",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/:id/events",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/providers/:id/location",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/slots/provider/:providerId",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/slots/:slotId/lock",
+    "methods": [
+      "POST",
+      "DELETE"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/slots/me",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/slots/bulk",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/slots/:id/block",
+    "methods": [
+      "PATCH"
+    ],
+    "middlewares": [
+      "authenticate",
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/payments",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/payments/create-order",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/payments/verify",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/payments/refund",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/dashboard",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/users",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/pets",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/providers",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/providers/:id/status",
+    "methods": [
+      "PATCH"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/documents/:id/verify",
+    "methods": [
+      "PATCH"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/providers/:id/commission",
+    "methods": [
+      "PATCH"
+    ],
+    "middlewares": [
+      "anonymous",
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/bookings",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/disputes",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/disputes/:id/resolve",
+    "methods": [
+      "PATCH"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/coupons",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/events",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/admin/webhook-logs",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/webhooks/razorpay",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/webhooks/qr-scan",
+    "methods": [
+      "POST"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/debug/supabase",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  },
+  {
+    "path": "/api/health",
+    "methods": [
+      "GET"
+    ],
+    "middlewares": [
+      "anonymous"
+    ]
+  }
+]

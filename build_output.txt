@@ -1,0 +1,8 @@
+﻿src/modules/bookings/bookings.service.ts(53,32): error TS7006: Parameter 'addon' implicitly has an 'any' type.
+src/modules/providers/providers.routes.ts(48,43): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+src/modules/providers/providers.service.ts(262,40): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/modules/providers/providers.service.ts(263,40): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/modules/providers/providers.service.ts(264,39): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/modules/reviews/reviews.service.ts(27,29): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/modules/reviews/reviews.service.ts(27,34): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/modules/slots/slots.service.ts(32,49): error TS7006: Parameter 'slot' implicitly has an 'any' type.
