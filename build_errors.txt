@@ -1,0 +1,62 @@
+src/modules/auth/auth.service.ts(130,43): error TS2339: Property 'expires_at' does not exist on type '{ access_token: string; refresh_token: string; }'.
+src/modules/auth/auth.service.ts(136,48): error TS2554: Expected 0 arguments, but got 1.
+src/modules/bookings/bookings.service.ts(50,18): error TS2339: Property 'in' does not exist on type 'PostgresQueryBuilder'.
+src/modules/bookings/bookings.service.ts(165,14): error TS2339: Property 'is' does not exist on type 'PostgresQueryBuilder'.
+src/modules/debug/debug.routes.ts(22,35): error TS2339: Property 'SUPABASE_URL' does not exist on type '{ NODE_ENV: "development" | "production" | "test"; PORT: number; DB_HOST: string; DB_PORT: number; DB_USER: string; DB_PASS: string; DB_NAME: string; CORS_ORIGIN: string; RATE_LIMIT_WINDOW_MS: number; RATE_LIMIT_MAX: number; RAZORPAY_KEY_ID?: string | undefined; RAZORPAY_KEY_SECRET?: string | undefined; JWT_SECRET?:...'.
+src/modules/debug/debug.routes.ts(23,37): error TS2339: Property 'SUPABASE_ANON_KEY' does not exist on type '{ NODE_ENV: "development" | "production" | "test"; PORT: number; DB_HOST: string; DB_PORT: number; DB_USER: string; DB_PASS: string; DB_NAME: string; CORS_ORIGIN: string; RATE_LIMIT_WINDOW_MS: number; RATE_LIMIT_MAX: number; RAZORPAY_KEY_ID?: string | undefined; RAZORPAY_KEY_SECRET?: string | undefined; JWT_SECRET?:...'.
+src/modules/debug/debug.routes.ts(23,62): error TS2339: Property 'SUPABASE_ANON_KEY' does not exist on type '{ NODE_ENV: "development" | "production" | "test"; PORT: number; DB_HOST: string; DB_PORT: number; DB_USER: string; DB_PASS: string; DB_NAME: string; CORS_ORIGIN: string; RATE_LIMIT_WINDOW_MS: number; RATE_LIMIT_MAX: number; RAZORPAY_KEY_ID?: string | undefined; RAZORPAY_KEY_SECRET?: string | undefined; JWT_SECRET?:...'.
+src/modules/debug/debug.routes.ts(24,40): error TS2339: Property 'SUPABASE_SERVICE_ROLE_KEY' does not exist on type '{ NODE_ENV: "development" | "production" | "test"; PORT: number; DB_HOST: string; DB_PORT: number; DB_USER: string; DB_PASS: string; DB_NAME: string; CORS_ORIGIN: string; RATE_LIMIT_WINDOW_MS: number; RATE_LIMIT_MAX: number; RAZORPAY_KEY_ID?: string | undefined; RAZORPAY_KEY_SECRET?: string | undefined; JWT_SECRET?:...'.
+src/modules/debug/debug.routes.ts(24,73): error TS2339: Property 'SUPABASE_SERVICE_ROLE_KEY' does not exist on type '{ NODE_ENV: "development" | "production" | "test"; PORT: number; DB_HOST: string; DB_PORT: number; DB_USER: string; DB_PASS: string; DB_NAME: string; CORS_ORIGIN: string; RATE_LIMIT_WINDOW_MS: number; RATE_LIMIT_MAX: number; RAZORPAY_KEY_ID?: string | undefined; RAZORPAY_KEY_SECRET?: string | undefined; JWT_SECRET?:...'.
+src/modules/events/events.service.ts(17,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/modules/events/events.service.ts(39,27): error TS2554: Expected 0-1 arguments, but got 2.
+src/modules/events/events.service.ts(74,31): error TS2554: Expected 0-1 arguments, but got 2.
+src/modules/notifications/notifications.service.ts(15,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/modules/notifications/notifications.service.ts(27,27): error TS2554: Expected 0-1 arguments, but got 2.
+src/modules/payments/payments.service.ts(168,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/modules/pets/pets.service.ts(11,14): error TS2339: Property 'is' does not exist on type 'PostgresQueryBuilder'.
+src/modules/pets/pets.service.ts(24,14): error TS2339: Property 'is' does not exist on type 'PostgresQueryBuilder'.
+src/modules/providers/providers.service.ts(16,14): error TS2339: Property 'is' does not exist on type 'PostgresQueryBuilder'.
+src/modules/providers/providers.service.ts(333,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/modules/reviews/reviews.service.ts(16,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/modules/slots/slots.service.ts(22,31): error TS2339: Property 'gte' does not exist on type 'PostgresQueryBuilder'.
+src/modules/slots/slots.service.ts(26,31): error TS2339: Property 'gte' does not exist on type 'PostgresQueryBuilder'.
+src/modules/slots/slots.service.ts(41,14): error TS2339: Property 'lt' does not exist on type 'PostgresQueryBuilder'.
+src/modules/slots/slots.service.ts(61,14): error TS2339: Property 'gt' does not exist on type 'PostgresQueryBuilder'.
+src/modules/slots/slots.service.ts(169,31): error TS2339: Property 'gte' does not exist on type 'PostgresQueryBuilder'.
+src/modules/wallet/wallet.service.ts(43,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/routes/admin.routes.ts(15,57): error TS2554: Expected 0-1 arguments, but got 2.
+src/routes/admin.routes.ts(16,58): error TS2554: Expected 0-1 arguments, but got 2.
+src/routes/admin.routes.ts(17,57): error TS2554: Expected 0-1 arguments, but got 2.
+src/routes/admin.routes.ts(21,52): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/routes/admin.routes.ts(21,57): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/routes/admin.routes.ts(60,14): error TS2339: Property 'is' does not exist on type 'PostgresQueryBuilder'.
+src/routes/admin.routes.ts(82,14): error TS2339: Property 'is' does not exist on type 'PostgresQueryBuilder'.
+src/routes/admin.routes.ts(103,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/routes/admin.routes.ts(213,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/routes/auth.routes.ts(183,43): error TS2339: Property 'expires_at' does not exist on type '{ access_token: string; refresh_token: string; }'.
+src/routes/auth.routes.ts(194,48): error TS2554: Expected 0 arguments, but got 1.
+src/routes/bookings.routes.ts(57,18): error TS2339: Property 'in' does not exist on type 'PostgresQueryBuilder'.
+src/routes/bookings.routes.ts(60,32): error TS7006: Parameter 'addon' implicitly has an 'any' type.
+src/routes/bookings.routes.ts(231,14): error TS2339: Property 'is' does not exist on type 'PostgresQueryBuilder'.
+src/routes/chat.routes.ts(28,14): error TS2339: Property 'or' does not exist on type 'PostgresQueryBuilder'.
+src/routes/chat.routes.ts(53,27): error TS2339: Property 'lt' does not exist on type 'PostgresQueryBuilder'.
+src/routes/chat.routes.ts(64,14): error TS2339: Property 'neq' does not exist on type 'PostgresQueryBuilder'.
+src/routes/events.routes.ts(21,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/routes/events.routes.ts(49,27): error TS2554: Expected 0-1 arguments, but got 2.
+src/routes/events.routes.ts(96,31): error TS2554: Expected 0-1 arguments, but got 2.
+src/routes/notifications.routes.ts(18,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/routes/notifications.routes.ts(30,27): error TS2554: Expected 0-1 arguments, but got 2.
+src/routes/payments.routes.ts(231,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/routes/pets.routes.ts(30,14): error TS2339: Property 'is' does not exist on type 'PostgresQueryBuilder'.
+src/routes/pets.routes.ts(48,14): error TS2339: Property 'is' does not exist on type 'PostgresQueryBuilder'.
+src/routes/providers.routes.ts(19,14): error TS2339: Property 'is' does not exist on type 'PostgresQueryBuilder'.
+src/routes/reviews.routes.ts(20,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.
+src/routes/reviews.routes.ts(31,29): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/routes/reviews.routes.ts(31,34): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/routes/slots.routes.ts(26,27): error TS2339: Property 'gte' does not exist on type 'PostgresQueryBuilder'.
+src/routes/slots.routes.ts(31,27): error TS2339: Property 'gte' does not exist on type 'PostgresQueryBuilder'.
+src/routes/slots.routes.ts(39,49): error TS7006: Parameter 'slot' implicitly has an 'any' type.
+src/routes/slots.routes.ts(48,14): error TS2339: Property 'lt' does not exist on type 'PostgresQueryBuilder'.
+src/routes/slots.routes.ts(77,14): error TS2339: Property 'gt' does not exist on type 'PostgresQueryBuilder'.
+src/routes/slots.routes.ts(219,27): error TS2339: Property 'gte' does not exist on type 'PostgresQueryBuilder'.
+src/routes/wallet.routes.ts(57,14): error TS2339: Property 'range' does not exist on type 'PostgresQueryBuilder'.

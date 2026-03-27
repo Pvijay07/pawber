@@ -17,20 +17,25 @@ const pool = new Pool({
 class PostgresQueryBuilder {
     private table: string;
     private _select: string = '*';
-    private _filters: { col: string; val: any; op: string }[] = [];
+    private _filters: { col: string; val: any; op: string; isOr?: boolean }[] = [];
     private _type: 'select' | 'insert' | 'update' | 'delete' = 'select';
     private _payload: any = null;
     private _single: boolean = false;
     private _order: string | null = null;
     private _limit: number | null = null;
+    private _offset: number | null = null;
+    private _countOnly: boolean = false;
 
     constructor(table: string) {
         this.table = table;
     }
 
-    select(columns: string = '*') {
+    select(columns: string = '*', options?: { count?: string, head?: boolean }) {
         this._select = columns;
         this._type = 'select';
+        if (options?.head) {
+            this._countOnly = true;
+        }
         return this;
     }
 
@@ -56,6 +61,68 @@ class PostgresQueryBuilder {
         return this;
     }
 
+    neq(col: string, val: any) {
+        this._filters.push({ col, val, op: '<>' });
+        return this;
+    }
+
+    gt(col: string, val: any) {
+        this._filters.push({ col, val, op: '>' });
+        return this;
+    }
+
+    gte(col: string, val: any) {
+        this._filters.push({ col, val, op: '>=' });
+        return this;
+    }
+
+    lt(col: string, val: any) {
+        this._filters.push({ col, val, op: '<' });
+        return this;
+    }
+
+    lte(col: string, val: any) {
+        this._filters.push({ col, val, op: '<=' });
+        return this;
+    }
+
+    in(col: string, vals: any[]) {
+        this._filters.push({ col, val: vals, op: 'IN' });
+        return this;
+    }
+
+    is(col: string, val: any) {
+        if (val === null) {
+            this._filters.push({ col, val: null, op: 'IS NULL' });
+        } else {
+            this._filters.push({ col, val, op: '=' });
+        }
+        return this;
+    }
+
+    or(filter: string) {
+        // Simple parser for "col1.eq.val1,col2.eq.val2"
+        const parts = filter.split(',');
+        parts.forEach(p => {
+            const [col, op, val] = p.split('.');
+            let actualOp = '=';
+            if (op === 'eq') actualOp = '=';
+            else if (op === 'neq') actualOp = '<>';
+            else if (op === 'gt') actualOp = '>';
+            else if (op === 'gte') actualOp = '>=';
+            else if (op === 'lt') actualOp = '<';
+            else if (op === 'lte') actualOp = '<=';
+            
+            this._filters.push({ col, val, op: actualOp, isOr: true });
+        });
+        return this;
+    }
+
+    ilike(col: string, val: any) {
+        this._filters.push({ col, val: val.replace(/\*/g, '%'), op: 'ILIKE' });
+        return this;
+    }
+
     match(obj: Record<string, any>) {
         for (const [col, val] of Object.entries(obj)) {
             this._filters.push({ col, val, op: '=' });
@@ -68,8 +135,14 @@ class PostgresQueryBuilder {
         return this;
     }
 
-    limit(n: number) {
+    limit(n: number, options?: any) {
         this._limit = n;
+        return this;
+    }
+
+    range(from: number, to: number) {
+        this._offset = from;
+        this._limit = to - from + 1;
         return this;
     }
 
@@ -85,12 +158,38 @@ class PostgresQueryBuilder {
 
             if (this._type === 'select') {
                 sql = `SELECT ${this._select} FROM ${this.table}`;
-                if (this._filters.length > 0) {
-                    sql += ' WHERE ' + this._filters.map((f, i) => `"${f.col}" ${f.op} $${i + 1}`).join(' AND ');
-                    values = this._filters.map(f => f.val);
+                const whereClause: string[] = [];
+                const orClause: string[] = [];
+                
+                this._filters.forEach(f => {
+                    if (f.isOr) {
+                        const placeholder = `$${values.length + 1}`;
+                        orClause.push(`"${f.col}" ${f.op} ${placeholder}`);
+                        values.push(f.val);
+                    } else if (f.op === 'IN') {
+                        const placeholders = f.val.map((_: any, i: number) => `$${values.length + i + 1}`);
+                        whereClause.push(`"${f.col}" IN (${placeholders.join(', ')})`);
+                        values.push(...f.val);
+                    } else if (f.op === 'IS NULL') {
+                        whereClause.push(`"${f.col}" IS NULL`);
+                    } else {
+                        const placeholder = `$${values.length + 1}`;
+                        whereClause.push(`"${f.col}" ${f.op} ${placeholder}`);
+                        values.push(f.val);
+                    }
+                });
+
+                if (whereClause.length > 0 || orClause.length > 0) {
+                    sql += ' WHERE ';
+                    const parts = [];
+                    if (whereClause.length > 0) parts.push(whereClause.join(' AND '));
+                    if (orClause.length > 0) parts.push('(' + orClause.join(' OR ') + ')');
+                    sql += parts.join(' AND ');
                 }
+
                 if (this._order) sql += ` ORDER BY ${this._order}`;
                 if (this._limit) sql += ` LIMIT ${this._limit}`;
+                if (this._offset) sql += ` OFFSET ${this._offset}`;
             } else if (this._type === 'insert') {
                 const data = Array.isArray(this._payload) ? this._payload : [this._payload];
                 if (data.length === 0) return resolve({ data: [], error: null });
@@ -105,9 +204,10 @@ class PostgresQueryBuilder {
                 });
                 sql += rowsSql.join(', ') + ' RETURNING *';
             } else if (this._type === 'update') {
-                const cols = Object.keys(this._payload);
+                const data = this._payload;
+                const cols = Object.keys(data);
                 sql = `UPDATE ${this.table} SET ` + cols.map((c, i) => `"${c}" = $${i + 1}`).join(', ');
-                values = cols.map(c => this._payload[c]);
+                values = cols.map(c => data[c]);
                 if (this._filters.length > 0) {
                     sql += ' WHERE ' + this._filters.map((f, i) => `"${f.col}" ${f.op} $${values.length + i + 1}`).join(' AND ');
                     values.push(...this._filters.map(f => f.val));
@@ -123,10 +223,14 @@ class PostgresQueryBuilder {
             }
 
             const res = await pool.query(sql, values);
-            let data = res.rows;
-            if (this._single) data = data[0] || null;
+            const data = this._countOnly ? [] : res.rows;
+            const count = res.rowCount;
 
-            return resolve({ data, error: null });
+            if (this._single) {
+                return resolve({ data: data[0] || null, error: null, count });
+            }
+
+            return resolve({ data, error: null, count });
         } catch (err: any) {
             console.error(`DB Error (${this.table}):`, err.message, err.detail);
             return resolve({ data: null, error: { message: err.message, details: err.detail } });
@@ -166,7 +270,16 @@ const auth = {
         }
     },
     refreshSession: async ({ refresh_token }: any) => {
-        return { data: { session: { access_token: 'new-local-token', refresh_token: 'local-refresh-token' } }, error: null };
+        return { 
+            data: { 
+                session: { 
+                    access_token: 'new-local-token', 
+                    refresh_token: 'local-refresh-token',
+                    expires_at: Math.floor(Date.now()/1000) + 3600
+                } 
+            }, 
+            error: null 
+        };
     },
     admin: {
         createUser: async ({ email, password }: any) => {
@@ -181,7 +294,7 @@ const auth = {
             await pool.query('DELETE FROM auth_users WHERE id = $1', [id]);
             return { data: null, error: null };
         },
-        signOut: async () => ({ data: null, error: null })
+        signOut: async (_token?: string) => ({ data: null, error: null })
     }
 };
 

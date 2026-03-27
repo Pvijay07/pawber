@@ -2,7 +2,7 @@
     "name": "pawber-backend",
     "version": "1.0.0",
     "description": "Pawber Marketplace API - Express + TypeScript + Supabase",
-    "main": "dist/index.js",
+    "main": "dist/server.js",
     "scripts": {
         "dev": "tsx watch src/server.ts",
         "dev:legacy": "tsx watch src/index.ts",

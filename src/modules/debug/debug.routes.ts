@@ -14,14 +14,15 @@ function mask(v?: string) {
     }
 }
 
-router.get('/supabase', (_req, res) => {
+router.get('/db', (_req, res) => {
     res.json({
         success: true,
         data: {
-            usingMock: !isSupabaseConfigured(),
-            supabaseUrl: mask(env.SUPABASE_URL),
-            hasAnonKey: Boolean(env.SUPABASE_ANON_KEY && env.SUPABASE_ANON_KEY !== 'placeholder'),
-            hasServiceKey: Boolean(env.SUPABASE_SERVICE_ROLE_KEY && env.SUPABASE_SERVICE_ROLE_KEY !== 'placeholder'),
+            host: env.DB_HOST,
+            port: env.DB_PORT,
+            user: env.DB_USER,
+            database: env.DB_NAME,
+            isUsingShim: isSupabaseConfigured(),
         },
     });
 });

@@ -28,7 +28,7 @@ reviewsRouter.get('/provider/:providerId', async (req, res, next) => {
             .eq('provider_id', req.params.providerId);
 
         const avgRating = stats && stats.length > 0
-            ? stats.reduce((sum, r) => sum + r.rating, 0) / stats.length
+            ? stats.reduce((sum: number, r: any) => sum + r.rating, 0) / stats.length
             : 0;
 
         res.json({

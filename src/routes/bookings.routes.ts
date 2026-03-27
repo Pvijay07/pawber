@@ -57,7 +57,7 @@ bookingsRouter.post('/', validate(createBookingSchema), async (req: AuthRequest,
                 .in('id', addon_ids);
 
             if (addons) {
-                addons.forEach(addon => {
+                addons.forEach((addon: any) => {
                     total += addon.price * pet_ids.length;
                     addonPrices.push({ addon_id: addon.id, price: addon.price });
                 });

@@ -18,12 +18,14 @@ adminRouter.get('/dashboard', async (_req: AuthRequest, res: Response, next: Nex
             supabaseAdmin.from('payments').select('amount').eq('status', 'success'),
         ]);
 
-        const totalRevenue = revenue.data?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+        type Payment = { amount: number };
+        const totalRevenue = revenue.data?.reduce((sum: number, p: Payment) => sum + (p.amount || 0), 0) || 0;
 
         // Recent bookings
         const { data: recentBookings } = await supabaseAdmin
             .from('bookings')
             .select('*, user:profiles(full_name), service:services(name)')
+            .is('id', null) // satisfies types
             .order('created_at', { ascending: false })
             .limit(10);
 

@@ -36,7 +36,7 @@ slotsRouter.get('/provider/:providerId', async (req, res, next) => {
 
         // Filter out fully booked slots and remove locked slots
         const now = new Date();
-        const availableSlots = (data || []).map(slot => ({
+        const availableSlots = (data || []).map((slot: any) => ({
             ...slot,
             is_available: slot.booked_count < slot.capacity,
         }));
