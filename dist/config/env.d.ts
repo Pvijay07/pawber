@@ -1,0 +1,62 @@
+import { z } from 'zod';
+declare const envSchema: z.ZodObject<{
+    NODE_ENV: z.ZodDefault<z.ZodEnum<["development", "production", "test"]>>;
+    PORT: z.ZodDefault<z.ZodNumber>;
+    DB_HOST: z.ZodDefault<z.ZodString>;
+    DB_PORT: z.ZodDefault<z.ZodNumber>;
+    DB_USER: z.ZodDefault<z.ZodString>;
+    DB_PASS: z.ZodDefault<z.ZodString>;
+    DB_NAME: z.ZodDefault<z.ZodString>;
+    CORS_ORIGIN: z.ZodDefault<z.ZodString>;
+    RATE_LIMIT_WINDOW_MS: z.ZodDefault<z.ZodNumber>;
+    RATE_LIMIT_MAX: z.ZodDefault<z.ZodNumber>;
+    RAZORPAY_KEY_ID: z.ZodOptional<z.ZodString>;
+    RAZORPAY_KEY_SECRET: z.ZodOptional<z.ZodString>;
+    JWT_SECRET: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    NODE_ENV: "development" | "production" | "test";
+    PORT: number;
+    DB_HOST: string;
+    DB_PORT: number;
+    DB_USER: string;
+    DB_PASS: string;
+    DB_NAME: string;
+    CORS_ORIGIN: string;
+    RATE_LIMIT_WINDOW_MS: number;
+    RATE_LIMIT_MAX: number;
+    RAZORPAY_KEY_ID?: string | undefined;
+    RAZORPAY_KEY_SECRET?: string | undefined;
+    JWT_SECRET?: string | undefined;
+}, {
+    NODE_ENV?: "development" | "production" | "test" | undefined;
+    PORT?: number | undefined;
+    DB_HOST?: string | undefined;
+    DB_PORT?: number | undefined;
+    DB_USER?: string | undefined;
+    DB_PASS?: string | undefined;
+    DB_NAME?: string | undefined;
+    CORS_ORIGIN?: string | undefined;
+    RATE_LIMIT_WINDOW_MS?: number | undefined;
+    RATE_LIMIT_MAX?: number | undefined;
+    RAZORPAY_KEY_ID?: string | undefined;
+    RAZORPAY_KEY_SECRET?: string | undefined;
+    JWT_SECRET?: string | undefined;
+}>;
+export declare const env: {
+    NODE_ENV: "development" | "production" | "test";
+    PORT: number;
+    DB_HOST: string;
+    DB_PORT: number;
+    DB_USER: string;
+    DB_PASS: string;
+    DB_NAME: string;
+    CORS_ORIGIN: string;
+    RATE_LIMIT_WINDOW_MS: number;
+    RATE_LIMIT_MAX: number;
+    RAZORPAY_KEY_ID?: string | undefined;
+    RAZORPAY_KEY_SECRET?: string | undefined;
+    JWT_SECRET?: string | undefined;
+};
+export type Env = z.infer<typeof envSchema>;
+export {};
+//# sourceMappingURL=env.d.ts.map
