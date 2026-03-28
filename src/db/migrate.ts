@@ -11,7 +11,7 @@ const pool = new Pool({
     database: env.DB_NAME,
 });
 
-async function migrate() {
+export async function migrate() {
     try {
         console.log(`🔄 Reading migration file for database: ${env.DB_NAME}...`);
         const sqlPath = path.join(__dirname, 'migration.sql');
@@ -19,22 +19,18 @@ async function migrate() {
 
         console.log('📋 Running migration statements against local PostgreSQL...');
         
-        // Remove comments and multi-line breaks
-        const cleanSql = sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//gm, '');
-        
-        // Split by semicolon (ignoring semicolons in strings/functions is hard, but simple split might work for our file)
-        // A better way is to run the whole thing, but pg doesn't support multi-statement script easily without a loop or specific settings.
-        // Actually, pool.query(sql) SHOULD work for multi-statement scripts in node-postgres.
-        
         await pool.query(sql);
 
         console.log('✅ Migration completed successfully!');
-        await pool.end();
     } catch (err: any) {
         console.error('❌ Migration error:', err.message);
         if (err.detail) console.error('Details:', err.detail);
-        process.exit(1);
+        // Don't exit process if called from server
+        throw err;
     }
 }
 
-migrate();
+// Run if called directly
+if (require.main === module) {
+    migrate().then(() => pool.end()).catch(() => process.exit(1));
+}

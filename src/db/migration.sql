@@ -8,6 +8,22 @@ create table if not exists auth_users (
   created_at timestamp default now()
 );
 
+-- Add demo user if not exists
+insert into auth_users (email, password)
+values ('demo@pawber.com', 'password123')
+on conflict (email) do nothing;
+
+-- Ensure profile for demo user
+insert into profiles (id, role, full_name, phone)
+select id, 'client', 'Sarah', '1234567890'
+from auth_users where email = 'demo@pawber.com'
+on conflict (id) do nothing;
+
+-- Add demo provider
+insert into auth_users (email, password)
+values ('provider@pawber.com', 'password123')
+on conflict (email) do nothing;
+
 -- Mock auth.uid() function for local Postgres
 create schema if not exists auth;
 create or replace function auth.uid() returns uuid as $$
