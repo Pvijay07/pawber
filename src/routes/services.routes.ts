@@ -4,7 +4,23 @@ import { authenticate, authorize, AuthRequest } from '../middleware/auth.middlew
 
 export const servicesRouter = Router();
 
-// ─── List Service Categories (Public) ───────────
+/**
+ * @swagger
+ * tags:
+ *   name: Services
+ *   description: Pet service catalog and categories
+ */
+
+/**
+ * @swagger
+ * /api/services/categories:
+ *   get:
+ *     summary: List all service categories
+ *     tags: [Services]
+ *     responses:
+ *       200:
+ *         description: List of categories
+ */
 servicesRouter.get('/categories', async (_req: Request, res: Response, next: NextFunction) => {
     try {
         const { data, error } = await supabaseAdmin
@@ -20,7 +36,21 @@ servicesRouter.get('/categories', async (_req: Request, res: Response, next: Nex
     }
 });
 
-// ─── List Services (Public, optionally by category) ─
+/**
+ * @swagger
+ * /api/services:
+ *   get:
+ *     summary: List all services
+ *     tags: [Services]
+ *     parameters:
+ *       - in: query
+ *         name: category_id
+ *         schema: { type: string }
+ *         description: Filter by category ID
+ *     responses:
+ *       200:
+ *         description: List of services
+ */
 servicesRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
         let query = supabaseAdmin
@@ -41,7 +71,18 @@ servicesRouter.get('/', async (req: Request, res: Response, next: NextFunction) 
     }
 });
 
-// ─── Get Service with Packages & Addons ─────────
+/**
+ * @swagger
+ * /api/services/{id}:
+ *   get:
+ *     summary: Get service details with packages
+ *     tags: [Services]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ */
 servicesRouter.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { data: service, error } = await supabaseAdmin
@@ -78,7 +119,15 @@ servicesRouter.get('/:id', async (req: Request, res: Response, next: NextFunctio
     }
 });
 
-// ─── Admin: Create Category ─────────────────────
+/**
+ * @swagger
+ * /api/services/categories:
+ *   post:
+ *     summary: Create a category (Admin)
+ *     tags: [Services]
+ *     security:
+ *       - BearerAuth: []
+ */
 servicesRouter.post('/categories', authenticate, authorize('admin'), async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { data, error } = await supabaseAdmin
@@ -94,7 +143,15 @@ servicesRouter.post('/categories', authenticate, authorize('admin'), async (req:
     }
 });
 
-// ─── Admin: Create Service ──────────────────────
+/**
+ * @swagger
+ * /api/services:
+ *   post:
+ *     summary: Create a service (Admin)
+ *     tags: [Services]
+ *     security:
+ *       - BearerAuth: []
+ */
 servicesRouter.post('/', authenticate, authorize('admin'), async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { data, error } = await supabaseAdmin
@@ -110,7 +167,15 @@ servicesRouter.post('/', authenticate, authorize('admin'), async (req: AuthReque
     }
 });
 
-// ─── Admin: Create Package ──────────────────────
+/**
+ * @swagger
+ * /api/services/{serviceId}/packages:
+ *   post:
+ *     summary: Add package to service (Admin)
+ *     tags: [Services]
+ *     security:
+ *       - BearerAuth: []
+ */
 servicesRouter.post('/:serviceId/packages', authenticate, authorize('admin'), async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { data, error } = await supabaseAdmin
@@ -126,7 +191,15 @@ servicesRouter.post('/:serviceId/packages', authenticate, authorize('admin'), as
     }
 });
 
-// ─── Admin: Create Addon ────────────────────────
+/**
+ * @swagger
+ * /api/services/{serviceId}/addons:
+ *   post:
+ *     summary: Add addon to service (Admin)
+ *     tags: [Services]
+ *     security:
+ *       - BearerAuth: []
+ */
 servicesRouter.post('/:serviceId/addons', authenticate, authorize('admin'), async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { data, error } = await supabaseAdmin

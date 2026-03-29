@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { env, corsConfig } from './config';
 import { apiLimiter, errorHandler } from './shared/middleware';
+import { setupSwagger } from './shared/lib/swagger';
 
 // ─── Module Imports (New Architecture) ──────────
 import { authRouter } from './modules/auth';
@@ -29,6 +30,10 @@ import { webhooksRouter } from './modules/webhooks';
  */
 export function createApp() {
     const app = express();
+
+    // ─── Documentation ──────────────────────────────
+    setupSwagger(app);
+
 
     // ─── Security ───────────────────────────────────
     app.use(helmet());

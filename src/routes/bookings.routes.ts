@@ -23,7 +23,43 @@ const createBookingSchema = z.object({
     coupon_code: z.string().optional(),
 });
 
-// ─── Create Booking ─────────────────────────────
+/**
+ * @swagger
+ * tags:
+ *   name: Bookings
+ *   description: Manage pet service bookings
+ */
+
+/**
+ * @swagger
+ * /api/bookings:
+ *   post:
+ *     summary: Create a new booking
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [service_id, package_id, booking_type, pet_ids]
+ *             properties:
+ *               service_id: { type: string, format: uuid }
+ *               package_id: { type: string, format: uuid }
+ *               booking_type: { type: string, enum: [instant, scheduled] }
+ *               booking_date: { type: string, format: date }
+ *               slot_id: { type: string, format: uuid }
+ *               pet_ids: { type: array, items: { type: string, format: uuid } }
+ *               addon_ids: { type: array, items: { type: string, format: uuid } }
+ *               address: { type: string }
+ *               notes: { type: string }
+ *               coupon_code: { type: string }
+ *     responses:
+ *       201:
+ *         description: Booking created successfully
+ */
 bookingsRouter.post('/', validate(createBookingSchema), async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { service_id, package_id, booking_type, booking_date, slot_id, pet_ids, addon_ids, address, latitude, longitude, notes, coupon_code } = req.body;
@@ -212,7 +248,20 @@ bookingsRouter.post('/', validate(createBookingSchema), async (req: AuthRequest,
     }
 });
 
-// ─── List User Bookings ────────────────────────
+/**
+ * @swagger
+ * /api/bookings:
+ *   get:
+ *     summary: List user bookings
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema: { type: string }
+ *         description: Filter by status
+ */
 bookingsRouter.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { status, limit = '20', offset = '0' } = req.query;
@@ -245,7 +294,20 @@ bookingsRouter.get('/', async (req: AuthRequest, res: Response, next: NextFuncti
     }
 });
 
-// ─── Get Booking Details ────────────────────────
+/**
+ * @swagger
+ * /api/bookings/{id}:
+ *   get:
+ *     summary: Get booking details
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ */
 bookingsRouter.get('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { data, error } = await supabaseAdmin
@@ -269,7 +331,27 @@ bookingsRouter.get('/:id', async (req: AuthRequest, res: Response, next: NextFun
     }
 });
 
-// ─── Cancel Booking ─────────────────────────────
+/**
+ * @swagger
+ * /api/bookings/{id}/cancel:
+ *   post:
+ *     summary: Cancel a booking
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason: { type: string }
+ */
 bookingsRouter.post('/:id/cancel', async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { reason } = req.body;
@@ -348,7 +430,29 @@ bookingsRouter.post('/:id/cancel', async (req: AuthRequest, res: Response, next:
     }
 });
 
-// ─── Provider: Update Booking Status ────────────
+/**
+ * @swagger
+ * /api/bookings/{id}/status:
+ *   patch:
+ *     summary: Update booking status (Provider/Admin)
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [status]
+ *             properties:
+ *               status: { type: string, enum: [confirmed, in_progress, completed] }
+ */
 bookingsRouter.patch('/:id/status', authenticate, authorize('provider', 'admin'), async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { status } = req.body;

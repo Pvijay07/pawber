@@ -22,6 +22,8 @@
         "morgan": "^1.10.0",
         "pg": "^8.20.0",
         "razorpay": "^2.9.4",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-express": "^5.0.1",
         "zod": "^3.23.8"
     },
     "devDependencies": {
@@ -31,6 +33,8 @@
         "@types/morgan": "^1.9.9",
         "@types/node": "^22.5.0",
         "@types/pg": "^8.20.0",
+        "@types/swagger-jsdoc": "^6.0.4",
+        "@types/swagger-ui-express": "^4.1.8",
         "express-list-endpoints": "^7.1.1",
         "tsx": "^4.19.0",
         "typescript": "^5.5.4"
