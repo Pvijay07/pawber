@@ -10,6 +10,7 @@ const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
 const config_1 = require("./config");
 const middleware_1 = require("./shared/middleware");
+const swagger_1 = require("./shared/lib/swagger");
 // ─── Module Imports (New Architecture) ──────────
 const auth_1 = require("./modules/auth");
 const bookings_1 = require("./modules/bookings");
@@ -32,6 +33,8 @@ const webhooks_1 = require("./modules/webhooks");
  */
 function createApp() {
     const app = (0, express_1.default)();
+    // ─── Documentation ──────────────────────────────
+    (0, swagger_1.setupSwagger)(app);
     // ─── Security ───────────────────────────────────
     app.use((0, helmet_1.default)());
     app.use((0, cors_1.default)(config_1.corsConfig));

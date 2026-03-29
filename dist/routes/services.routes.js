@@ -5,7 +5,22 @@ const express_1 = require("express");
 const supabase_1 = require("../lib/supabase");
 const auth_middleware_1 = require("../middleware/auth.middleware");
 exports.servicesRouter = (0, express_1.Router)();
-// ─── List Service Categories (Public) ───────────
+/**
+ * @swagger
+ * tags:
+ *   name: Services
+ *   description: Pet service catalog and categories
+ */
+/**
+ * @swagger
+ * /api/services/categories:
+ *   get:
+ *     summary: List all service categories
+ *     tags: [Services]
+ *     responses:
+ *       200:
+ *         description: List of categories
+ */
 exports.servicesRouter.get('/categories', async (_req, res, next) => {
     try {
         const { data, error } = await supabase_1.supabaseAdmin
@@ -21,7 +36,21 @@ exports.servicesRouter.get('/categories', async (_req, res, next) => {
         next(err);
     }
 });
-// ─── List Services (Public, optionally by category) ─
+/**
+ * @swagger
+ * /api/services:
+ *   get:
+ *     summary: List all services
+ *     tags: [Services]
+ *     parameters:
+ *       - in: query
+ *         name: category_id
+ *         schema: { type: string }
+ *         description: Filter by category ID
+ *     responses:
+ *       200:
+ *         description: List of services
+ */
 exports.servicesRouter.get('/', async (req, res, next) => {
     try {
         let query = supabase_1.supabaseAdmin
@@ -40,7 +69,18 @@ exports.servicesRouter.get('/', async (req, res, next) => {
         next(err);
     }
 });
-// ─── Get Service with Packages & Addons ─────────
+/**
+ * @swagger
+ * /api/services/{id}:
+ *   get:
+ *     summary: Get service details with packages
+ *     tags: [Services]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ */
 exports.servicesRouter.get('/:id', async (req, res, next) => {
     try {
         const { data: service, error } = await supabase_1.supabaseAdmin
@@ -74,7 +114,15 @@ exports.servicesRouter.get('/:id', async (req, res, next) => {
         next(err);
     }
 });
-// ─── Admin: Create Category ─────────────────────
+/**
+ * @swagger
+ * /api/services/categories:
+ *   post:
+ *     summary: Create a category (Admin)
+ *     tags: [Services]
+ *     security:
+ *       - BearerAuth: []
+ */
 exports.servicesRouter.post('/categories', auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)('admin'), async (req, res, next) => {
     try {
         const { data, error } = await supabase_1.supabaseAdmin
@@ -90,7 +138,15 @@ exports.servicesRouter.post('/categories', auth_middleware_1.authenticate, (0, a
         next(err);
     }
 });
-// ─── Admin: Create Service ──────────────────────
+/**
+ * @swagger
+ * /api/services:
+ *   post:
+ *     summary: Create a service (Admin)
+ *     tags: [Services]
+ *     security:
+ *       - BearerAuth: []
+ */
 exports.servicesRouter.post('/', auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)('admin'), async (req, res, next) => {
     try {
         const { data, error } = await supabase_1.supabaseAdmin
@@ -106,7 +162,15 @@ exports.servicesRouter.post('/', auth_middleware_1.authenticate, (0, auth_middle
         next(err);
     }
 });
-// ─── Admin: Create Package ──────────────────────
+/**
+ * @swagger
+ * /api/services/{serviceId}/packages:
+ *   post:
+ *     summary: Add package to service (Admin)
+ *     tags: [Services]
+ *     security:
+ *       - BearerAuth: []
+ */
 exports.servicesRouter.post('/:serviceId/packages', auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)('admin'), async (req, res, next) => {
     try {
         const { data, error } = await supabase_1.supabaseAdmin
@@ -122,7 +186,15 @@ exports.servicesRouter.post('/:serviceId/packages', auth_middleware_1.authentica
         next(err);
     }
 });
-// ─── Admin: Create Addon ────────────────────────
+/**
+ * @swagger
+ * /api/services/{serviceId}/addons:
+ *   post:
+ *     summary: Add addon to service (Admin)
+ *     tags: [Services]
+ *     security:
+ *       - BearerAuth: []
+ */
 exports.servicesRouter.post('/:serviceId/addons', auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)('admin'), async (req, res, next) => {
     try {
         const { data, error } = await supabase_1.supabaseAdmin

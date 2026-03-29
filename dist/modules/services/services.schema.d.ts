@@ -5,8 +5,8 @@ export declare const createCategorySchema: z.ZodObject<{
     sort_order: z.ZodOptional<z.ZodNumber>;
     is_active: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
-    is_active: boolean;
     name: string;
+    is_active: boolean;
     sort_order?: number | undefined;
     icon_url?: string | undefined;
 }, {
@@ -22,14 +22,14 @@ export declare const createServiceSchema: z.ZodObject<{
     image_url: z.ZodOptional<z.ZodString>;
     is_active: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    name: string;
     is_active: boolean;
     category_id: string;
-    name: string;
     description?: string | undefined;
     image_url?: string | undefined;
 }, {
-    category_id: string;
     name: string;
+    category_id: string;
     is_active?: boolean | undefined;
     description?: string | undefined;
     image_url?: string | undefined;
@@ -65,8 +65,8 @@ export declare const createAddonSchema: z.ZodObject<{
     duration_minutes: z.ZodOptional<z.ZodNumber>;
     is_active: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
-    is_active: boolean;
     name: string;
+    is_active: boolean;
     price: number;
     duration_minutes?: number | undefined;
 }, {
