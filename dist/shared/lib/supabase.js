@@ -31,11 +31,37 @@ class PostgresQueryBuilder {
     _limit = null;
     _offset = null;
     _countOnly = false;
+    _joins = [];
+    _group = null;
     constructor(table) {
         this.table = table;
     }
     select(columns = '*', options) {
-        this._select = columns;
+        // Simple support for relation joins: "*, user:profiles(*)"
+        if (columns.includes(':')) {
+            const parts = columns.split(',').map(p => p.trim());
+            const selectParts = [];
+            parts.forEach(p => {
+                if (p.includes(':') && p.includes('(')) {
+                    // Extract relation info: "alias:table(cols)"
+                    const [aliasTable, colsWithParens] = p.split('(');
+                    const [alias, relTable] = aliasTable.split(':');
+                    const relCols = colsWithParens.replace(')', '').split(',').map(c => `"${relTable}"."${c.trim()}"`);
+                    // Simple LEFT JOIN
+                    this._joins.push(`LEFT JOIN "${relTable}" ON "${this.table}"."${relTable.replace(/s$/, '')}_id" = "${relTable}"."id"`);
+                    // JSON aggregation or just columns (mocking simple structure)
+                    // For now, let's keep it simple: just grab the columns
+                    selectParts.push(...relCols.map((c, i) => `${c} AS "${alias}_${relTable.replace(/s$/, '')}_${i}"`));
+                }
+                else {
+                    selectParts.push(`"${this.table}"."${p}"`);
+                }
+            });
+            this._select = selectParts.join(', ');
+        }
+        else {
+            this._select = columns === '*' ? '*' : columns.split(',').map(c => `"${this.table}"."${c.trim()}"`).join(', ');
+        }
         this._type = 'select';
         if (options?.head) {
             this._countOnly = true;
@@ -147,26 +173,28 @@ class PostgresQueryBuilder {
             let sql = '';
             let values = [];
             if (this._type === 'select') {
-                sql = `SELECT ${this._select} FROM ${this.table}`;
+                sql = `SELECT ${this._select} FROM "${this.table}"`;
+                if (this._joins.length > 0)
+                    sql += ' ' + this._joins.join(' ');
                 const whereClause = [];
                 const orClause = [];
                 this._filters.forEach(f => {
                     if (f.isOr) {
                         const placeholder = `$${values.length + 1}`;
-                        orClause.push(`"${f.col}" ${f.op} ${placeholder}`);
+                        orClause.push(`"${this.table}"."${f.col}" ${f.op} ${placeholder}`);
                         values.push(f.val);
                     }
                     else if (f.op === 'IN') {
                         const placeholders = f.val.map((_, i) => `$${values.length + i + 1}`);
-                        whereClause.push(`"${f.col}" IN (${placeholders.join(', ')})`);
+                        whereClause.push(`"${this.table}"."${f.col}" IN (${placeholders.join(', ')})`);
                         values.push(...f.val);
                     }
                     else if (f.op === 'IS NULL') {
-                        whereClause.push(`"${f.col}" IS NULL`);
+                        whereClause.push(`"${this.table}"."${f.col}" IS NULL`);
                     }
                     else {
                         const placeholder = `$${values.length + 1}`;
-                        whereClause.push(`"${f.col}" ${f.op} ${placeholder}`);
+                        whereClause.push(`"${this.table}"."${f.col}" ${f.op} ${placeholder}`);
                         values.push(f.val);
                     }
                 });
@@ -191,7 +219,7 @@ class PostgresQueryBuilder {
                 if (data.length === 0)
                     return resolve({ data: [], error: null });
                 const cols = Object.keys(data[0]);
-                sql = `INSERT INTO ${this.table} ("${cols.join('", "')}") VALUES `;
+                sql = `INSERT INTO "${this.table}" ("${cols.join('", "')}") VALUES `;
                 const rowsSql = [];
                 data.forEach((row, i) => {
                     const rowVals = cols.map((_, j) => `$${i * cols.length + j + 1}`);
@@ -203,22 +231,23 @@ class PostgresQueryBuilder {
             else if (this._type === 'update') {
                 const data = this._payload;
                 const cols = Object.keys(data);
-                sql = `UPDATE ${this.table} SET ` + cols.map((c, i) => `"${c}" = $${i + 1}`).join(', ');
+                sql = `UPDATE "${this.table}" SET ` + cols.map((c, i) => `"${c}" = $${i + 1}`).join(', ');
                 values = cols.map(c => data[c]);
                 if (this._filters.length > 0) {
-                    sql += ' WHERE ' + this._filters.map((f, i) => `"${f.col}" ${f.op} $${values.length + i + 1}`).join(' AND ');
+                    sql += ' WHERE ' + this._filters.map((f, i) => `"${this.table}"."${f.col}" ${f.op} $${values.length + i + 1}`).join(' AND ');
                     values.push(...this._filters.map(f => f.val));
                 }
                 sql += ' RETURNING *';
             }
             else if (this._type === 'delete') {
-                sql = `DELETE FROM ${this.table}`;
+                sql = `DELETE FROM "${this.table}"`;
                 if (this._filters.length > 0) {
-                    sql += ' WHERE ' + this._filters.map((f, i) => `"${f.col}" ${f.op} $${i + 1}`).join(' AND ');
+                    sql += ' WHERE ' + this._filters.map((f, i) => `"${this.table}"."${f.col}" ${f.op} $${i + 1}`).join(' AND ');
                     values = this._filters.map(f => f.val);
                 }
                 sql += ' RETURNING *';
             }
+            console.log('SQL:', sql, values); // Log for debugging on Render
             const res = await pool.query(sql, values);
             const data = this._countOnly ? [] : res.rows;
             const count = res.rowCount;
@@ -229,7 +258,7 @@ class PostgresQueryBuilder {
         }
         catch (err) {
             console.error(`DB Error (${this.table}):`, err.message, err.detail);
-            return resolve({ data: null, error: { message: err.message, details: err.detail } });
+            return resolve({ data: null, error: { message: err.message || 'Unknown database error', details: err.detail } });
         }
     }
 }

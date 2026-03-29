@@ -13,6 +13,8 @@ declare class PostgresQueryBuilder {
     private _limit;
     private _offset;
     private _countOnly;
+    private _joins;
+    private _group;
     constructor(table: string);
     select(columns?: string, options?: {
         count?: string;
