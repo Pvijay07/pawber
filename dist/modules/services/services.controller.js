@@ -7,20 +7,20 @@ class ServicesController {
         const result = await services_service_1.servicesService.listCategories();
         if (result.success)
             return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
     async listServices(req, res, _next) {
         const categoryId = req.query.category_id;
         const result = await services_service_1.servicesService.listServices(categoryId);
         if (result.success)
             return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
     async getServiceById(req, res, _next) {
         const result = await services_service_1.servicesService.getServiceById(req.params.id);
         if (result.success)
             return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
     async createCategory(req, res, _next) {
         const result = await services_service_1.servicesService.createCategory(req.body);
@@ -54,25 +54,25 @@ class ServicesController {
         const result = await services_service_1.servicesService.updateCategory(req.params.id, req.body);
         if (result.success)
             return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
     async updateService(req, res, _next) {
         const result = await services_service_1.servicesService.updateService(req.params.id, req.body);
         if (result.success)
             return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
     async updatePackage(req, res, _next) {
         const result = await services_service_1.servicesService.updatePackage(req.params.id, req.body);
         if (result.success)
             return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
     async updateAddon(req, res, _next) {
         const result = await services_service_1.servicesService.updateAddon(req.params.id, req.body);
         if (result.success)
             return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
     async deleteItem(req, res, _next) {
         const path = req.baseUrl + req.path;

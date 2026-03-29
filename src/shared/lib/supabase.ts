@@ -2,7 +2,10 @@ import { Pool } from 'pg';
 import jwt from 'jsonwebtoken';
 import { env } from '../../config';
 
-const pool = new Pool({
+const pool = new Pool(env.DATABASE_URL ? {
+    connectionString: env.DATABASE_URL,
+    ssl: env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+} : {
     host: env.DB_HOST,
     port: env.DB_PORT,
     user: env.DB_USER,

@@ -2,6 +2,7 @@ import { z } from 'zod';
 declare const envSchema: z.ZodObject<{
     NODE_ENV: z.ZodDefault<z.ZodEnum<["development", "production", "test"]>>;
     PORT: z.ZodDefault<z.ZodNumber>;
+    DATABASE_URL: z.ZodOptional<z.ZodString>;
     DB_HOST: z.ZodDefault<z.ZodString>;
     DB_PORT: z.ZodDefault<z.ZodNumber>;
     DB_USER: z.ZodDefault<z.ZodString>;
@@ -24,12 +25,14 @@ declare const envSchema: z.ZodObject<{
     CORS_ORIGIN: string;
     RATE_LIMIT_WINDOW_MS: number;
     RATE_LIMIT_MAX: number;
+    DATABASE_URL?: string | undefined;
     RAZORPAY_KEY_ID?: string | undefined;
     RAZORPAY_KEY_SECRET?: string | undefined;
     JWT_SECRET?: string | undefined;
 }, {
     NODE_ENV?: "development" | "production" | "test" | undefined;
     PORT?: number | undefined;
+    DATABASE_URL?: string | undefined;
     DB_HOST?: string | undefined;
     DB_PORT?: number | undefined;
     DB_USER?: string | undefined;
@@ -53,6 +56,7 @@ export declare const env: {
     CORS_ORIGIN: string;
     RATE_LIMIT_WINDOW_MS: number;
     RATE_LIMIT_MAX: number;
+    DATABASE_URL?: string | undefined;
     RAZORPAY_KEY_ID?: string | undefined;
     RAZORPAY_KEY_SECRET?: string | undefined;
     JWT_SECRET?: string | undefined;

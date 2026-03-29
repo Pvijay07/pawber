@@ -11,6 +11,7 @@ const envSchema = zod_1.z.object({
     NODE_ENV: zod_1.z.enum(['development', 'production', 'test']).default('development'),
     PORT: zod_1.z.coerce.number().default(4000),
     // Database
+    DATABASE_URL: zod_1.z.string().optional(),
     DB_HOST: zod_1.z.string().default('localhost'),
     DB_PORT: zod_1.z.coerce.number().default(5432),
     DB_USER: zod_1.z.string().default('postgres'),

@@ -7,20 +7,20 @@ export class ServicesController {
     async listCategories(_req: Request, res: Response, _next: NextFunction) {
         const result = await servicesService.listCategories();
         if (result.success) return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
 
     async listServices(req: Request, res: Response, _next: NextFunction) {
         const categoryId = req.query.category_id as string | undefined;
         const result = await servicesService.listServices(categoryId);
         if (result.success) return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
 
     async getServiceById(req: Request, res: Response, _next: NextFunction) {
         const result = await servicesService.getServiceById(req.params.id);
         if (result.success) return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
 
     async createCategory(req: AuthRequest, res: Response, _next: NextFunction) {
@@ -58,25 +58,25 @@ export class ServicesController {
     async updateCategory(req: AuthRequest, res: Response, _next: NextFunction) {
         const result = await servicesService.updateCategory(req.params.id, req.body);
         if (result.success) return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
 
     async updateService(req: AuthRequest, res: Response, _next: NextFunction) {
         const result = await servicesService.updateService(req.params.id, req.body);
         if (result.success) return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
 
     async updatePackage(req: AuthRequest, res: Response, _next: NextFunction) {
         const result = await servicesService.updatePackage(req.params.id, req.body);
         if (result.success) return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
 
     async updateAddon(req: AuthRequest, res: Response, _next: NextFunction) {
         const result = await servicesService.updateAddon(req.params.id, req.body);
         if (result.success) return res.status(200).json({ success: true, data: result.data });
-        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
     }
 
     async deleteItem(req: AuthRequest, res: Response, _next: NextFunction) {

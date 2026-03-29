@@ -9,7 +9,10 @@ exports.isSupabaseConfigured = isSupabaseConfigured;
 const pg_1 = require("pg");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const config_1 = require("../../config");
-const pool = new pg_1.Pool({
+const pool = new pg_1.Pool(config_1.env.DATABASE_URL ? {
+    connectionString: config_1.env.DATABASE_URL,
+    ssl: config_1.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+} : {
     host: config_1.env.DB_HOST,
     port: config_1.env.DB_PORT,
     user: config_1.env.DB_USER,
