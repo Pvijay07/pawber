@@ -52,7 +52,7 @@ function createApp() {
             data: {
                 status: 'ok',
                 service: 'PetCare API',
-                version: '2.0.0',
+                version: '4.0.0',
                 timestamp: new Date().toISOString(),
                 environment: config_1.env.NODE_ENV,
             },

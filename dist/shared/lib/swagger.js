@@ -11,7 +11,7 @@ const options = {
         openapi: '3.0.0',
         info: {
             title: 'PetCare API',
-            version: '2.0.0',
+            version: '4.0.0',
             description: 'API documentation for the PetCare Marketplace platform. Includes services, bookings, providers, and more.',
             contact: {
                 name: 'PetCare Support',
