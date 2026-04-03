@@ -30,6 +30,7 @@ import { webhooksRouter } from './modules/webhooks';
  */
 export function createApp() {
     const app = express();
+    app.set('trust proxy', 1);
 
     // ─── Documentation ──────────────────────────────
     setupSwagger(app);
@@ -49,7 +50,6 @@ export function createApp() {
     // ─── Logging ────────────────────────────────────
     app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-    // ─── Health Check ───────────────────────────────
     app.get('/health', (_req, res) => {
         res.json({
             success: true,
@@ -59,6 +59,11 @@ export function createApp() {
                 version: '4.0.0',
                 timestamp: new Date().toISOString(),
                 environment: env.NODE_ENV,
+                supabaseKeyCheck: !!env.SUPABASE_SERVICE_ROLE_KEY,
+                supabaseUrlCheck: !!env.SUPABASE_URL,
+                rawUrlVal: env.SUPABASE_URL ? env.SUPABASE_URL.substring(0, 10) + '...' : null,
+                allKeys: Object.keys(env).join(','),
+                processEnvKeys: Object.keys(process.env).join(',')
             },
         });
     });
