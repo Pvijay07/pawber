@@ -33,6 +33,7 @@ const webhooks_1 = require("./modules/webhooks");
  */
 function createApp() {
     const app = (0, express_1.default)();
+    app.set('trust proxy', 1);
     // ─── Documentation ──────────────────────────────
     (0, swagger_1.setupSwagger)(app);
     // ─── Security ───────────────────────────────────
@@ -45,7 +46,6 @@ function createApp() {
     app.use(express_1.default.urlencoded({ extended: true }));
     // ─── Logging ────────────────────────────────────
     app.use((0, morgan_1.default)(config_1.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-    // ─── Health Check ───────────────────────────────
     app.get('/health', (_req, res) => {
         res.json({
             success: true,
@@ -55,6 +55,11 @@ function createApp() {
                 version: '4.0.0',
                 timestamp: new Date().toISOString(),
                 environment: config_1.env.NODE_ENV,
+                supabaseKeyCheck: !!config_1.env.SUPABASE_SERVICE_ROLE_KEY,
+                supabaseUrlCheck: !!config_1.env.SUPABASE_URL,
+                rawUrlVal: config_1.env.SUPABASE_URL ? config_1.env.SUPABASE_URL.substring(0, 10) + '...' : null,
+                allKeys: Object.keys(config_1.env).join(','),
+                processEnvKeys: Object.keys(process.env).join(',')
             },
         });
     });

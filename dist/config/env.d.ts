@@ -14,6 +14,8 @@ declare const envSchema: z.ZodObject<{
     RAZORPAY_KEY_ID: z.ZodOptional<z.ZodString>;
     RAZORPAY_KEY_SECRET: z.ZodOptional<z.ZodString>;
     JWT_SECRET: z.ZodOptional<z.ZodString>;
+    SUPABASE_URL: z.ZodOptional<z.ZodString>;
+    SUPABASE_SERVICE_ROLE_KEY: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     NODE_ENV: "development" | "production" | "test";
     PORT: number;
@@ -29,6 +31,8 @@ declare const envSchema: z.ZodObject<{
     RAZORPAY_KEY_ID?: string | undefined;
     RAZORPAY_KEY_SECRET?: string | undefined;
     JWT_SECRET?: string | undefined;
+    SUPABASE_URL?: string | undefined;
+    SUPABASE_SERVICE_ROLE_KEY?: string | undefined;
 }, {
     NODE_ENV?: "development" | "production" | "test" | undefined;
     PORT?: number | undefined;
@@ -44,6 +48,8 @@ declare const envSchema: z.ZodObject<{
     RAZORPAY_KEY_ID?: string | undefined;
     RAZORPAY_KEY_SECRET?: string | undefined;
     JWT_SECRET?: string | undefined;
+    SUPABASE_URL?: string | undefined;
+    SUPABASE_SERVICE_ROLE_KEY?: string | undefined;
 }>;
 export declare const env: {
     NODE_ENV: "development" | "production" | "test";
@@ -60,6 +66,8 @@ export declare const env: {
     RAZORPAY_KEY_ID?: string | undefined;
     RAZORPAY_KEY_SECRET?: string | undefined;
     JWT_SECRET?: string | undefined;
+    SUPABASE_URL?: string | undefined;
+    SUPABASE_SERVICE_ROLE_KEY?: string | undefined;
 };
 export type Env = z.infer<typeof envSchema>;
 export {};

@@ -22,14 +22,14 @@ export declare const createServiceSchema: z.ZodObject<{
     image_url: z.ZodOptional<z.ZodString>;
     is_active: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    category_id: string;
     name: string;
     is_active: boolean;
-    category_id: string;
     description?: string | undefined;
     image_url?: string | undefined;
 }, {
-    name: string;
     category_id: string;
+    name: string;
     is_active?: boolean | undefined;
     description?: string | undefined;
     image_url?: string | undefined;

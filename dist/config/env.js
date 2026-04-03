@@ -27,6 +27,9 @@ const envSchema = zod_1.z.object({
     RAZORPAY_KEY_SECRET: zod_1.z.string().optional(),
     // JWT
     JWT_SECRET: zod_1.z.string().optional(),
+    // Supabase
+    SUPABASE_URL: zod_1.z.string().trim().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: zod_1.z.string().trim().optional(),
 });
 function loadEnv() {
     const parsed = envSchema.safeParse(process.env);
@@ -39,6 +42,7 @@ function loadEnv() {
             ...process.env,
         });
     }
+    console.log('✅ ENV LOADED. Keys present:', Object.keys(parsed.data).filter(k => !!parsed.data[k]).join(', '));
     return parsed.data;
 }
 exports.env = loadEnv();

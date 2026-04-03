@@ -3,11 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.supabasePublic = exports.supabaseAdmin = void 0;
+exports.supabaseAdmin = exports.supabasePublic = void 0;
 exports.createSupabaseClient = createSupabaseClient;
 exports.isSupabaseConfigured = isSupabaseConfigured;
 const pg_1 = require("pg");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const supabase_js_1 = require("@supabase/supabase-js");
 const config_1 = require("../../config");
 const pool = new pg_1.Pool(config_1.env.DATABASE_URL ? {
     connectionString: config_1.env.DATABASE_URL,
@@ -24,6 +25,7 @@ const pool = new pg_1.Pool(config_1.env.DATABASE_URL ? {
  * but executes raw SQL against a local PostgreSQL database.
  */
 class PostgresQueryBuilder {
+    // ... (keeping existing implementation for fallback)
     table;
     _select = '*';
     _filters = [];
@@ -40,24 +42,51 @@ class PostgresQueryBuilder {
         this.table = table;
     }
     select(columns = '*', options) {
-        // Simple support for relation joins: "*, user:profiles(*)"
         if (columns.includes(':')) {
-            const parts = columns.split(',').map(p => p.trim());
+            let parts = [];
+            let current = '';
+            let depth = 0;
+            for (let i = 0; i < columns.length; i++) {
+                const char = columns[i];
+                if (char === '(')
+                    depth++;
+                else if (char === ')')
+                    depth--;
+                if (char === ',' && depth === 0) {
+                    parts.push(current.trim());
+                    current = '';
+                }
+                else {
+                    current += char;
+                }
+            }
+            if (current)
+                parts.push(current.trim());
             const selectParts = [];
             parts.forEach(p => {
                 if (p.includes(':') && p.includes('(')) {
-                    // Extract relation info: "alias:table(cols)"
                     const [aliasTable, colsWithParens] = p.split('(');
                     const [alias, relTable] = aliasTable.split(':');
                     const relCols = colsWithParens.replace(')', '').split(',').map(c => `"${relTable}"."${c.trim()}"`);
-                    // Simple LEFT JOIN
-                    this._joins.push(`LEFT JOIN "${relTable}" ON "${this.table}"."${relTable.replace(/s$/, '')}_id" = "${relTable}"."id"`);
-                    // JSON aggregation or just columns (mocking simple structure)
-                    // For now, let's keep it simple: just grab the columns
+                    let fkColumn = `${relTable.replace(/s$/, '')}_id`;
+                    if (this.table === 'services' && relTable === 'service_categories')
+                        fkColumn = 'category_id';
+                    if (this.table === 'providers' && relTable === 'profiles')
+                        fkColumn = 'user_id';
+                    if (this.table === 'pets' && relTable === 'profiles')
+                        fkColumn = 'user_id';
+                    if (this.table === 'bookings' && relTable === 'profiles')
+                        fkColumn = 'user_id';
+                    this._joins.push(`LEFT JOIN "${relTable}" ON "${this.table}"."${fkColumn}" = "${relTable}"."id"`);
                     selectParts.push(...relCols.map((c, i) => `${c} AS "${alias}_${relTable.replace(/s$/, '')}_${i}"`));
                 }
                 else {
-                    selectParts.push(`"${this.table}"."${p}"`);
+                    if (p === '*') {
+                        selectParts.push(`"${this.table}".*`);
+                    }
+                    else {
+                        selectParts.push(`"${this.table}"."${p}"`);
+                    }
                 }
             });
             this._select = selectParts.join(', ');
@@ -123,7 +152,6 @@ class PostgresQueryBuilder {
         return this;
     }
     or(filter) {
-        // Simple parser for "col1.eq.val1,col2.eq.val2"
         const parts = filter.split(',');
         parts.forEach(p => {
             const [col, op, val] = p.split('.');
@@ -250,98 +278,116 @@ class PostgresQueryBuilder {
                 }
                 sql += ' RETURNING *';
             }
-            console.log('SQL:', sql, values); // Log for debugging on Render
             const res = await pool.query(sql, values);
             const data = this._countOnly ? [] : res.rows;
             const count = res.rowCount;
-            if (this._single) {
+            if (this._single)
                 return resolve({ data: data[0] || null, error: null, count });
-            }
             return resolve({ data, error: null, count });
         }
         catch (err) {
-            console.error(`DB Error (${this.table}):`, err.message, err.detail);
-            return resolve({ data: null, error: { message: err.message || 'Unknown database error', details: err.detail } });
+            console.error(`DB Error (${this.table}):`, err.message);
+            return resolve({ data: null, error: { message: err.message || 'Unknown database error' } });
         }
     }
 }
 /**
- * Mock implementation of Supabase Auth using local PostgreSQL auth_users table
+ * Actual implementation of Supabase client if configured,
+ * otherwise fallback to shim.
  */
-const auth = {
-    signInWithPassword: async ({ email, password }) => {
-        try {
-            const { rows } = await pool.query('SELECT * FROM auth_users WHERE email = $1 AND password = $2', [email, password]);
-            if (rows.length === 0)
-                return { data: { user: null, session: null }, error: { message: 'Invalid credentials' } };
-            const user = rows[0];
-            const accessToken = jsonwebtoken_1.default.sign({ sub: user.id, email: user.email }, config_1.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
-            return {
-                data: {
-                    user: { id: user.id, email: user.email },
-                    session: { access_token: accessToken, refresh_token: 'local-refresh-token', expires_at: Math.floor(Date.now() / 1000) + 3600 }
-                },
-                error: null
-            };
+let supabaseAdmin;
+if (config_1.env.SUPABASE_URL && config_1.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.log(`✅ Using real Supabase: ${config_1.env.SUPABASE_URL}`);
+    console.log(`🔑 Key length: ${config_1.env.SUPABASE_SERVICE_ROLE_KEY.length}, Start: ${config_1.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 15)}...`);
+    exports.supabaseAdmin = supabaseAdmin = (0, supabase_js_1.createClient)(config_1.env.SUPABASE_URL, config_1.env.SUPABASE_SERVICE_ROLE_KEY, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
         }
-        catch (err) {
-            return { data: null, error: { message: err.message } };
-        }
-    },
-    getUser: async (token) => {
-        try {
-            const decoded = jsonwebtoken_1.default.verify(token, config_1.env.JWT_SECRET || 'secret');
-            return { data: { user: { id: decoded.sub, email: decoded.email } }, error: null };
-        }
-        catch (err) {
-            return { data: { user: null }, error: { message: 'Invalid token' } };
-        }
-    },
-    refreshSession: async ({ refresh_token }) => {
-        return {
-            data: {
-                session: {
-                    access_token: 'new-local-token',
-                    refresh_token: 'local-refresh-token',
-                    expires_at: Math.floor(Date.now() / 1000) + 3600
-                }
-            },
-            error: null
-        };
-    },
-    admin: {
-        createUser: async ({ email, password }) => {
+    });
+}
+else {
+    if (config_1.env.NODE_ENV === 'production') {
+        console.error('CRITICAL: PRODUCTION DETECTED BUT SUPABASE_URL IS MISSING! Process Env check:', process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY ? 'HasKey' : 'NoKey');
+        throw new Error('Supabase URL or Key is strictly required in production!');
+    }
+    console.log('⚠️ Using local PostgreSQL shim for Supabase');
+    const auth = {
+        signInWithPassword: async ({ email, password }) => {
             try {
-                const { rows } = await pool.query('INSERT INTO auth_users (email, password) VALUES ($1, $2) RETURNING id, email', [email, password]);
-                return { data: { user: rows[0] }, error: null };
+                const { rows } = await pool.query('SELECT * FROM auth_users WHERE email = $1 AND password = $2', [email, password]);
+                if (rows.length === 0)
+                    return { data: { user: null, session: null }, error: { message: 'Invalid credentials' } };
+                const user = rows[0];
+                const accessToken = jsonwebtoken_1.default.sign({ sub: user.id, email: user.email }, config_1.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
+                return {
+                    data: {
+                        user: { id: user.id, email: user.email },
+                        session: { access_token: accessToken, refresh_token: 'local-refresh-token', expires_at: Math.floor(Date.now() / 1000) + 3600 }
+                    },
+                    error: null
+                };
             }
             catch (err) {
                 return { data: null, error: { message: err.message } };
             }
         },
-        deleteUser: async (id) => {
-            await pool.query('DELETE FROM auth_users WHERE id = $1', [id]);
-            return { data: null, error: null };
+        getUser: async (token) => {
+            try {
+                const decoded = jsonwebtoken_1.default.verify(token, config_1.env.JWT_SECRET || 'secret');
+                return { data: { user: { id: decoded.sub, email: decoded.email } }, error: null };
+            }
+            catch (err) {
+                return { data: { user: null }, error: { message: 'Invalid token' } };
+            }
         },
-        signOut: async (_token) => ({ data: null, error: null })
-    }
-};
-exports.supabaseAdmin = {
-    from: (table) => new PostgresQueryBuilder(table),
-    auth,
-    rpc: async (fn, params) => {
-        if (fn === 'increment_slot_booking') {
-            const { rows } = await pool.query('SELECT increment_slot_booking($1)', [params.p_slot_id]);
-            return { data: rows[0].increment_slot_booking, error: null };
+        // ... (remaining shim methods)
+        refreshSession: async ({ refresh_token }) => {
+            return { data: { session: { access_token: 'new-local-token', refresh_token: 'local-refresh-token', expires_at: Math.floor(Date.now() / 1000) + 3600 } }, error: null };
+        },
+        admin: {
+            createUser: async ({ email, password }) => {
+                try {
+                    const { rows } = await pool.query('INSERT INTO auth_users (email, password) VALUES ($1, $2) RETURNING id, email', [email, password]);
+                    return { data: { user: rows[0] }, error: null };
+                }
+                catch (err) {
+                    return { data: null, error: { message: err.message } };
+                }
+            },
+            deleteUser: async (id) => {
+                await pool.query('DELETE FROM auth_users WHERE id = $1', [id]);
+                return { data: null, error: null };
+            },
+            signOut: async (_token) => ({ data: null, error: null })
         }
-        return { data: null, error: { message: `RPC ${fn} not implemented in shim` } };
-    }
-};
-exports.supabasePublic = exports.supabaseAdmin;
+    };
+    exports.supabaseAdmin = supabaseAdmin = {
+        from: (table) => new PostgresQueryBuilder(table),
+        auth,
+        rpc: async (fn, params) => {
+            if (fn === 'increment_slot_booking') {
+                const { rows } = await pool.query('SELECT increment_slot_booking($1)', [params.p_slot_id]);
+                return { data: rows[0].increment_slot_booking, error: null };
+            }
+            return { data: null, error: { message: `RPC ${fn} not implemented in shim` } };
+        }
+    };
+}
+exports.supabasePublic = supabaseAdmin;
 function createSupabaseClient(token) {
-    return exports.supabaseAdmin;
+    if (config_1.env.SUPABASE_URL && config_1.env.SUPABASE_SERVICE_ROLE_KEY) {
+        return (0, supabase_js_1.createClient)(config_1.env.SUPABASE_URL, config_1.env.SUPABASE_SERVICE_ROLE_KEY, {
+            global: {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        });
+    }
+    return supabaseAdmin;
 }
 function isSupabaseConfigured() {
-    return true;
+    return !!(config_1.env.SUPABASE_URL && config_1.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 //# sourceMappingURL=supabase.js.map
