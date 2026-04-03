@@ -27,6 +27,10 @@ const envSchema = z.object({
 
     // JWT
     JWT_SECRET: z.string().optional(),
+
+    // Supabase
+    SUPABASE_URL: z.string().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 });
 
 function loadEnv() {

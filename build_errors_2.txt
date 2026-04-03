@@ -1,6 +1,0 @@
-src/modules/providers/providers.service.ts(21,43): error TS2339: Property 'ilike' does not exist on type 'PostgresQueryBuilder'.
-src/routes/bookings.routes.ts(60,32): error TS7006: Parameter 'addon' implicitly has an 'any' type.
-src/routes/providers.routes.ts(24,33): error TS2339: Property 'ilike' does not exist on type 'PostgresQueryBuilder'.
-src/routes/reviews.routes.ts(31,29): error TS7006: Parameter 'sum' implicitly has an 'any' type.
-src/routes/reviews.routes.ts(31,34): error TS7006: Parameter 'r' implicitly has an 'any' type.
-src/routes/slots.routes.ts(39,49): error TS7006: Parameter 'slot' implicitly has an 'any' type.

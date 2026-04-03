@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import jwt from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
 import { env } from '../../config';
 
 const pool = new Pool(env.DATABASE_URL ? {
@@ -18,6 +19,7 @@ const pool = new Pool(env.DATABASE_URL ? {
  * but executes raw SQL against a local PostgreSQL database.
  */
 class PostgresQueryBuilder {
+    // ... (keeping existing implementation for fallback)
     private table: string;
     private _select: string = '*';
     private _filters: { col: string; val: any; op: string; isOr?: boolean }[] = [];
@@ -36,26 +38,45 @@ class PostgresQueryBuilder {
     }
 
     select(columns: string = '*', options?: { count?: string, head?: boolean }) {
-        // Simple support for relation joins: "*, user:profiles(*)"
         if (columns.includes(':')) {
-            const parts = columns.split(',').map(p => p.trim());
+            let parts: string[] = [];
+            let current = '';
+            let depth = 0;
+            for (let i = 0; i < columns.length; i++) {
+                const char = columns[i];
+                if (char === '(') depth++;
+                else if (char === ')') depth--;
+                if (char === ',' && depth === 0) {
+                    parts.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            if (current) parts.push(current.trim());
+            
             const selectParts: string[] = [];
             
             parts.forEach(p => {
                 if (p.includes(':') && p.includes('(')) {
-                    // Extract relation info: "alias:table(cols)"
                     const [aliasTable, colsWithParens] = p.split('(');
                     const [alias, relTable] = aliasTable.split(':');
                     const relCols = colsWithParens.replace(')', '').split(',').map(c => `"${relTable}"."${c.trim()}"`);
                     
-                    // Simple LEFT JOIN
-                    this._joins.push(`LEFT JOIN "${relTable}" ON "${this.table}"."${relTable.replace(/s$/, '')}_id" = "${relTable}"."id"`);
-                    
-                    // JSON aggregation or just columns (mocking simple structure)
-                    // For now, let's keep it simple: just grab the columns
+                    let fkColumn = `${relTable.replace(/s$/, '')}_id`;
+                    if (this.table === 'services' && relTable === 'service_categories') fkColumn = 'category_id';
+                    if (this.table === 'providers' && relTable === 'profiles') fkColumn = 'user_id';
+                    if (this.table === 'pets' && relTable === 'profiles') fkColumn = 'user_id';
+                    if (this.table === 'bookings' && relTable === 'profiles') fkColumn = 'user_id';
+
+                    this._joins.push(`LEFT JOIN "${relTable}" ON "${this.table}"."${fkColumn}" = "${relTable}"."id"`);
                     selectParts.push(...relCols.map((c, i) => `${c} AS "${alias}_${relTable.replace(/s$/, '')}_${i}"`));
                 } else {
-                    selectParts.push(`"${this.table}"."${p}"`);
+                    if (p === '*') {
+                        selectParts.push(`"${this.table}".*`);
+                    } else {
+                        selectParts.push(`"${this.table}"."${p}"`);
+                    }
                 }
             });
             this._select = selectParts.join(', ');
@@ -132,7 +153,6 @@ class PostgresQueryBuilder {
     }
 
     or(filter: string) {
-        // Simple parser for "col1.eq.val1,col2.eq.val2"
         const parts = filter.split(',');
         parts.forEach(p => {
             const [col, op, val] = p.split('.');
@@ -190,10 +210,8 @@ class PostgresQueryBuilder {
             if (this._type === 'select') {
                 sql = `SELECT ${this._select} FROM "${this.table}"`;
                 if (this._joins.length > 0) sql += ' ' + this._joins.join(' ');
-                
                 const whereClause: string[] = [];
                 const orClause: string[] = [];
-                
                 this._filters.forEach(f => {
                     if (f.isOr) {
                         const placeholder = `$${values.length + 1}`;
@@ -211,7 +229,6 @@ class PostgresQueryBuilder {
                         values.push(f.val);
                     }
                 });
-
                 if (whereClause.length > 0 || orClause.length > 0) {
                     sql += ' WHERE ';
                     const parts = [];
@@ -219,14 +236,12 @@ class PostgresQueryBuilder {
                     if (orClause.length > 0) parts.push('(' + orClause.join(' OR ') + ')');
                     sql += parts.join(' AND ');
                 }
-
                 if (this._order) sql += ` ORDER BY ${this._order}`;
                 if (this._limit) sql += ` LIMIT ${this._limit}`;
                 if (this._offset) sql += ` OFFSET ${this._offset}`;
             } else if (this._type === 'insert') {
                 const data = Array.isArray(this._payload) ? this._payload : [this._payload];
                 if (data.length === 0) return resolve({ data: [], error: null });
-                
                 const cols = Object.keys(data[0]);
                 sql = `INSERT INTO "${this.table}" ("${cols.join('", "')}") VALUES `;
                 const rowsSql: string[] = [];
@@ -254,102 +269,111 @@ class PostgresQueryBuilder {
                 }
                 sql += ' RETURNING *';
             }
-
-            console.log('SQL:', sql, values); // Log for debugging on Render
             const res = await pool.query(sql, values);
             const data = this._countOnly ? [] : res.rows;
             const count = res.rowCount;
-
-            if (this._single) {
-                return resolve({ data: data[0] || null, error: null, count });
-            }
-
+            if (this._single) return resolve({ data: data[0] || null, error: null, count });
             return resolve({ data, error: null, count });
         } catch (err: any) {
-            console.error(`DB Error (${this.table}):`, err.message, err.detail);
-            return resolve({ data: null, error: { message: err.message || 'Unknown database error', details: err.detail } });
+            console.error(`DB Error (${this.table}):`, err.message);
+            return resolve({ data: null, error: { message: err.message || 'Unknown database error' } });
         }
     }
 }
 
 /** 
- * Mock implementation of Supabase Auth using local PostgreSQL auth_users table
+ * Actual implementation of Supabase client if configured, 
+ * otherwise fallback to shim.
  */
-const auth = {
-    signInWithPassword: async ({ email, password }: any) => {
-        try {
-            const { rows } = await pool.query('SELECT * FROM auth_users WHERE email = $1 AND password = $2', [email, password]);
-            if (rows.length === 0) return { data: { user: null, session: null }, error: { message: 'Invalid credentials' } };
-            
-            const user = rows[0];
-            const accessToken = jwt.sign({ sub: user.id, email: user.email }, env.JWT_SECRET || 'secret', { expiresIn: '1h' });
-            
-            return {
-                data: {
-                    user: { id: user.id, email: user.email },
-                    session: { access_token: accessToken, refresh_token: 'local-refresh-token', expires_at: Math.floor(Date.now()/1000) + 3600 }
-                },
-                error: null
-            };
-        } catch (err: any) {
-            return { data: null, error: { message: err.message } };
+let supabaseAdmin: any;
+
+if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.log(`✅ Using real Supabase: ${env.SUPABASE_URL}`);
+    console.log(`🔑 Key length: ${env.SUPABASE_SERVICE_ROLE_KEY.length}, Start: ${env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 15)}...`);
+    supabaseAdmin = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
         }
-    },
-    getUser: async (token: string) => {
-        try {
-            const decoded: any = jwt.verify(token, env.JWT_SECRET || 'secret');
-            return { data: { user: { id: decoded.sub, email: decoded.email } }, error: null };
-        } catch (err) {
-            return { data: { user: null }, error: { message: 'Invalid token' } };
-        }
-    },
-    refreshSession: async ({ refresh_token }: any) => {
-        return { 
-            data: { 
-                session: { 
-                    access_token: 'new-local-token', 
-                    refresh_token: 'local-refresh-token',
-                    expires_at: Math.floor(Date.now()/1000) + 3600
-                } 
-            }, 
-            error: null 
-        };
-    },
-    admin: {
-        createUser: async ({ email, password }: any) => {
+    });
+} else {
+    console.log('⚠️ Using local PostgreSQL shim for Supabase');
+    const auth = {
+        signInWithPassword: async ({ email, password }: any) => {
             try {
-                const { rows } = await pool.query('INSERT INTO auth_users (email, password) VALUES ($1, $2) RETURNING id, email', [email, password]);
-                return { data: { user: rows[0] }, error: null };
+                const { rows } = await pool.query('SELECT * FROM auth_users WHERE email = $1 AND password = $2', [email, password]);
+                if (rows.length === 0) return { data: { user: null, session: null }, error: { message: 'Invalid credentials' } };
+                const user = rows[0];
+                const accessToken = jwt.sign({ sub: user.id, email: user.email }, env.JWT_SECRET || 'secret', { expiresIn: '1h' });
+                return {
+                    data: {
+                        user: { id: user.id, email: user.email },
+                        session: { access_token: accessToken, refresh_token: 'local-refresh-token', expires_at: Math.floor(Date.now()/1000) + 3600 }
+                    },
+                    error: null
+                };
             } catch (err: any) {
                 return { data: null, error: { message: err.message } };
             }
         },
-        deleteUser: async (id: string) => {
-            await pool.query('DELETE FROM auth_users WHERE id = $1', [id]);
-            return { data: null, error: null };
+        getUser: async (token: string) => {
+            try {
+                const decoded: any = jwt.verify(token, env.JWT_SECRET || 'secret');
+                return { data: { user: { id: decoded.sub, email: decoded.email } }, error: null };
+            } catch (err) {
+                return { data: { user: null }, error: { message: 'Invalid token' } };
+            }
         },
-        signOut: async (_token?: string) => ({ data: null, error: null })
-    }
-};
-
-export const supabaseAdmin = {
-    from: (table: string) => new PostgresQueryBuilder(table),
-    auth,
-    rpc: async (fn: string, params: any) => {
-        if (fn === 'increment_slot_booking') {
-            const { rows } = await pool.query('SELECT increment_slot_booking($1)', [params.p_slot_id]);
-            return { data: rows[0].increment_slot_booking, error: null };
+        // ... (remaining shim methods)
+        refreshSession: async ({ refresh_token }: any) => {
+            return { data: { session: { access_token: 'new-local-token', refresh_token: 'local-refresh-token', expires_at: Math.floor(Date.now()/1000) + 3600 } }, error: null };
+        },
+        admin: {
+            createUser: async ({ email, password }: any) => {
+                try {
+                    const { rows } = await pool.query('INSERT INTO auth_users (email, password) VALUES ($1, $2) RETURNING id, email', [email, password]);
+                    return { data: { user: rows[0] }, error: null };
+                } catch (err: any) {
+                    return { data: null, error: { message: err.message } };
+                }
+            },
+            deleteUser: async (id: string) => {
+                await pool.query('DELETE FROM auth_users WHERE id = $1', [id]);
+                return { data: null, error: null };
+            },
+            signOut: async (_token?: string) => ({ data: null, error: null })
         }
-        return { data: null, error: { message: `RPC ${fn} not implemented in shim` } };
-    }
-};
+    };
+
+    supabaseAdmin = {
+        from: (table: string) => new PostgresQueryBuilder(table),
+        auth,
+        rpc: async (fn: string, params: any) => {
+            if (fn === 'increment_slot_booking') {
+                const { rows } = await pool.query('SELECT increment_slot_booking($1)', [params.p_slot_id]);
+                return { data: rows[0].increment_slot_booking, error: null };
+            }
+            return { data: null, error: { message: `RPC ${fn} not implemented in shim` } };
+        }
+    };
+}
 
 export const supabasePublic = supabaseAdmin;
+export { supabaseAdmin };
 
 export function createSupabaseClient(token: string) {
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+        return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+            global: {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        });
+    }
     return supabaseAdmin;
 }
 
 export function isSupabaseConfigured() {
-    return true;
+    return !!(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
 }

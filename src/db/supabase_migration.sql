@@ -1,28 +1,11 @@
--- =====================
--- 0. AUTH USERS (Local Mock)
--- =====================
-create table if not exists auth_users (
-  id uuid primary key default gen_random_uuid(),
-  email text unique not null,
-  password text not null, -- Store hashed password in production
-  created_at timestamp default now()
-);
+-- =============================================
+-- Supabase Migration for PetCare
+-- Uses Supabase's built-in auth.users instead of local auth_users
+-- =============================================
 
--- Mock auth.uid() function for local Postgres
-create schema if not exists auth;
-create or replace function auth.uid() returns uuid as $$
-  begin
-    return current_setting('request.jwt.claims', true)::json->>'sub';
-  exception when others then
-    return null;
-  end;
-$$ language plpgsql;
-
--- =====================
--- 1. USERS & ROLES
--- =====================
+-- 1. PROFILES (references Supabase auth.users)
 create table if not exists profiles (
-  id uuid primary key references auth_users(id) on delete cascade,
+  id uuid primary key references auth.users(id) on delete cascade,
   role text check (role in ('client','provider','admin')) not null default 'client',
   full_name text,
   phone text,
@@ -31,30 +14,12 @@ create table if not exists profiles (
   created_at timestamp default now()
 );
 
--- Add demo user if not exists
-insert into auth_users (email, password)
-values ('demo@pawber.com', 'password123')
-on conflict (email) do nothing;
-
--- Ensure profile for demo user
-insert into profiles (id, role, full_name, phone)
-select id, 'client', 'Sarah', '1234567890'
-from auth_users where email = 'demo@pawber.com'
-on conflict (id) do nothing;
-
--- Add demo provider
-insert into auth_users (email, password)
-values ('provider@pawber.com', 'password123')
-on conflict (email) do nothing;
-
--- =====================
 -- 2. PET MANAGEMENT
--- =====================
 create table if not exists pets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references profiles(id) on delete cascade not null,
   name text not null,
-  type text,            -- dog, cat, bird, etc.
+  type text,
   breed text,
   age int,
   weight numeric,
@@ -65,14 +30,12 @@ create table if not exists pets (
   created_at timestamp default now()
 );
 
--- =====================
 -- 3. SERVICE PROVIDERS
--- =====================
 create table if not exists providers (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references profiles(id) on delete cascade not null,
   business_name text,
-  category text,         -- grooming, vet, boarding, training, walking
+  category text,
   description text,
   address text,
   city text,
@@ -87,13 +50,11 @@ create table if not exists providers (
   created_at timestamp default now()
 );
 
--- =====================
--- 4. PROVIDER KYC & DOCUMENTS
--- =====================
+-- 4. PROVIDER DOCUMENTS
 create table if not exists provider_documents (
   id uuid primary key default gen_random_uuid(),
   provider_id uuid references providers(id) on delete cascade not null,
-  document_type text not null,  -- aadhaar, license, certification
+  document_type text not null,
   file_url text not null,
   verification_status text default 'pending' check (verification_status in ('pending','approved','rejected')),
   reviewed_by uuid references profiles(id),
@@ -101,9 +62,7 @@ create table if not exists provider_documents (
   uploaded_at timestamp default now()
 );
 
--- =====================
 -- 5. SERVICE CATEGORIES & SERVICES
--- =====================
 create table if not exists service_categories (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
@@ -124,9 +83,7 @@ create table if not exists services (
   created_at timestamp default now()
 );
 
--- =====================
 -- 6. PACKAGES
--- =====================
 create table if not exists service_packages (
   id uuid primary key default gen_random_uuid(),
   service_id uuid references services(id) on delete cascade not null,
@@ -134,7 +91,7 @@ create table if not exists service_packages (
   description text,
   price numeric not null,
   duration_minutes int,
-  features text[],                  -- array of feature strings
+  features text[],
   is_popular boolean default false,
   is_instant_available boolean default true,
   is_scheduled_available boolean default true,
@@ -143,9 +100,7 @@ create table if not exists service_packages (
   created_at timestamp default now()
 );
 
--- =====================
--- 7. ADD-ONS SYSTEM
--- =====================
+-- 7. ADD-ONS
 create table if not exists addons (
   id uuid primary key default gen_random_uuid(),
   service_id uuid references services(id) on delete cascade not null,
@@ -164,9 +119,7 @@ create table if not exists package_addons (
   unique(package_id, addon_id)
 );
 
--- =====================
 -- 8. PROVIDER SERVICES & SLOTS
--- =====================
 create table if not exists provider_services (
   id uuid primary key default gen_random_uuid(),
   provider_id uuid references providers(id) on delete cascade not null,
@@ -176,7 +129,6 @@ create table if not exists provider_services (
   unique(provider_id, service_id)
 );
 
--- provider blocked dates separate from slots for quick unavailability marking
 create table if not exists blocked_dates (
   id uuid primary key default gen_random_uuid(),
   provider_id uuid references providers(id) on delete cascade not null,
@@ -199,9 +151,7 @@ create table if not exists provider_slots (
   constraint valid_capacity check (booked_count <= capacity)
 );
 
--- =====================
--- 9. SLOT LOCKING (Anti-double-booking)
--- =====================
+-- 9. SLOT LOCKS
 create table if not exists slot_locks (
   id uuid primary key default gen_random_uuid(),
   slot_id uuid references provider_slots(id) on delete cascade not null,
@@ -210,9 +160,7 @@ create table if not exists slot_locks (
   created_at timestamp default now()
 );
 
--- =====================
--- 10. BOOKINGS (Core Engine)
--- =====================
+-- 10. BOOKINGS
 create table if not exists bookings (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references profiles(id) not null,
@@ -236,9 +184,7 @@ create table if not exists bookings (
   created_at timestamp default now()
 );
 
--- =====================
 -- 11. BOOKING PETS & ADDONS
--- =====================
 create table if not exists booking_pets (
   id uuid primary key default gen_random_uuid(),
   booking_id uuid references bookings(id) on delete cascade not null,
@@ -254,9 +200,7 @@ create table if not exists booking_addons (
   unique(booking_id, addon_id)
 );
 
--- =====================
 -- 12. WALLET & PAYMENTS
--- =====================
 create table if not exists wallets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references profiles(id) not null unique,
@@ -273,8 +217,8 @@ create table if not exists wallet_transactions (
   type text check (type in ('credit','debit','refund','bonus')) not null,
   amount numeric not null,
   description text,
-  reference_id text,         -- booking_id, payment_id, etc.
-  reference_type text,       -- booking, topup, refund, etc.
+  reference_id text,
+  reference_type text,
   created_at timestamp default now()
 );
 
@@ -282,9 +226,9 @@ create table if not exists payments (
   id uuid primary key default gen_random_uuid(),
   booking_id uuid references bookings(id),
   user_id uuid references profiles(id) not null,
-  order_id text unique,                      -- gateway order ID
+  order_id text unique,
   payment_gateway text default 'razorpay',
-  payment_method text,                       -- upi, card, netbanking, wallet
+  payment_method text,
   amount numeric not null,
   currency text default 'INR',
   status text default 'pending' check (status in ('pending','success','failed','refunded')),
@@ -292,9 +236,7 @@ create table if not exists payments (
   created_at timestamp default now()
 );
 
--- =====================
 -- 13. ESCROW
--- =====================
 create table if not exists escrow (
   id uuid primary key default gen_random_uuid(),
   booking_id uuid references bookings(id) not null unique,
@@ -305,9 +247,7 @@ create table if not exists escrow (
   created_at timestamp default now()
 );
 
--- =====================
 -- 14. EVENTS & TICKETS
--- =====================
 create table if not exists events (
   id uuid primary key default gen_random_uuid(),
   title text not null,
@@ -335,9 +275,7 @@ create table if not exists event_tickets (
   created_at timestamp default now()
 );
 
--- =====================
--- 15. REVIEWS & RATINGS
--- =====================
+-- 15. REVIEWS
 create table if not exists reviews (
   id uuid primary key default gen_random_uuid(),
   booking_id uuid references bookings(id) not null unique,
@@ -345,28 +283,24 @@ create table if not exists reviews (
   provider_id uuid references providers(id) not null,
   rating int check (rating between 1 and 5) not null,
   comment text,
-  reply text,            -- provider reply
+  reply text,
   reply_at timestamp,
   created_at timestamp default now()
 );
 
--- =====================
 -- 16. NOTIFICATIONS
--- =====================
 create table if not exists notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references profiles(id) not null,
   title text not null,
   message text,
-  type text,             -- booking, payment, promo, system
-  data jsonb,            -- extra payload (booking_id, etc.)
+  type text,
+  data jsonb,
   is_read boolean default false,
   created_at timestamp default now()
 );
 
--- =====================
 -- 17. DISPUTES
--- =====================
 create table if not exists disputes (
   id uuid primary key default gen_random_uuid(),
   booking_id uuid references bookings(id) not null,
@@ -381,12 +315,10 @@ create table if not exists disputes (
   created_at timestamp default now()
 );
 
--- =====================
 -- 18. WEBHOOK LOGS
--- =====================
 create table if not exists webhook_logs (
   id uuid primary key default gen_random_uuid(),
-  source text not null,    -- razorpay, stripe, etc.
+  source text not null,
   event_type text,
   payload jsonb not null,
   status text default 'received',
@@ -395,9 +327,7 @@ create table if not exists webhook_logs (
   created_at timestamp default now()
 );
 
--- =====================
--- 19. COUPONS & PROMOTIONS
--- =====================
+-- 19. COUPONS
 create table if not exists coupons (
   id uuid primary key default gen_random_uuid(),
   code text unique not null,
@@ -423,9 +353,7 @@ create table if not exists coupon_usage (
   unique(coupon_id, user_id, booking_id)
 );
 
--- =====================
--- 20. CHAT THREADS
--- =====================
+-- 20. CHAT
 create table if not exists chat_threads (
   id uuid primary key default gen_random_uuid(),
   booking_id uuid references bookings(id) on delete cascade not null unique,
@@ -435,9 +363,6 @@ create table if not exists chat_threads (
   updated_at timestamp default now()
 );
 
--- =====================
--- 21. CHAT MESSAGES
--- =====================
 create table if not exists chat_messages (
   id uuid primary key default gen_random_uuid(),
   thread_id uuid references chat_threads(id) on delete cascade not null,
@@ -449,9 +374,7 @@ create table if not exists chat_messages (
   created_at timestamp default now()
 );
 
--- =====================
--- 22. GPS LOCATION UPDATES
--- =====================
+-- 21. GPS TRACKING
 create table if not exists location_updates (
   id uuid primary key default gen_random_uuid(),
   booking_id uuid references bookings(id) on delete cascade not null,
@@ -466,7 +389,7 @@ create table if not exists location_updates (
 );
 
 -- ============================================================
--- INDEXES (Production Critical)
+-- INDEXES
 -- ============================================================
 create index if not exists idx_profiles_role on profiles(role);
 create index if not exists idx_pets_user on pets(user_id);
@@ -488,21 +411,13 @@ create index if not exists idx_events_date on events(event_date);
 create index if not exists idx_disputes_status on disputes(status);
 create index if not exists idx_webhook_logs_source on webhook_logs(source, created_at);
 create index if not exists idx_coupons_code on coupons(code);
-
--- Chat indexes
 create index if not exists idx_chat_threads_client on chat_threads(client_id);
 create index if not exists idx_chat_threads_provider on chat_threads(provider_user_id);
 create index if not exists idx_chat_threads_booking on chat_threads(booking_id);
 create index if not exists idx_chat_messages_thread on chat_messages(thread_id, created_at);
 create index if not exists idx_chat_messages_unread on chat_messages(thread_id, is_read) where is_read = false;
-
--- GPS indexes
 create index if not exists idx_location_updates_booking on location_updates(booking_id, created_at);
 create index if not exists idx_location_updates_provider on location_updates(provider_id);
-
--- RLS skipped for local postgres as it requires custom auth handling
-
--- RLS skipped for local postgres dev
 
 -- ============================================================
 -- FUNCTIONS
@@ -541,7 +456,7 @@ create trigger on_review_created
   for each row
   execute function update_provider_rating();
 
--- Auto-clean expired slot locks (run via pg_cron or scheduled function)
+-- Clean expired slot locks
 create or replace function cleanup_expired_slot_locks()
 returns void as $$
 begin
@@ -549,7 +464,7 @@ begin
 end;
 $$ language plpgsql security definer;
 
--- Increment booked_count safely (used by booking creation)
+-- Increment booked_count safely
 create or replace function increment_slot_booking(p_slot_id uuid)
 returns boolean as $$
 declare
@@ -567,3 +482,66 @@ begin
   return true;
 end;
 $$ language plpgsql security definer;
+
+-- ============================================================
+-- DISABLE RLS for all tables (service_role key bypasses anyway)
+-- ============================================================
+alter table profiles enable row level security;
+create policy "Service role full access on profiles" on profiles for all using (true) with check (true);
+
+alter table pets enable row level security;
+create policy "Service role full access on pets" on pets for all using (true) with check (true);
+
+alter table providers enable row level security;
+create policy "Service role full access on providers" on providers for all using (true) with check (true);
+
+alter table services enable row level security;
+create policy "Service role full access on services" on services for all using (true) with check (true);
+
+alter table service_categories enable row level security;
+create policy "Service role full access on service_categories" on service_categories for all using (true) with check (true);
+
+alter table service_packages enable row level security;
+create policy "Service role full access on service_packages" on service_packages for all using (true) with check (true);
+
+alter table addons enable row level security;
+create policy "Service role full access on addons" on addons for all using (true) with check (true);
+
+alter table bookings enable row level security;
+create policy "Service role full access on bookings" on bookings for all using (true) with check (true);
+
+alter table wallets enable row level security;
+create policy "Service role full access on wallets" on wallets for all using (true) with check (true);
+
+alter table wallet_transactions enable row level security;
+create policy "Service role full access on wallet_transactions" on wallet_transactions for all using (true) with check (true);
+
+alter table payments enable row level security;
+create policy "Service role full access on payments" on payments for all using (true) with check (true);
+
+alter table events enable row level security;
+create policy "Service role full access on events" on events for all using (true) with check (true);
+
+alter table event_tickets enable row level security;
+create policy "Service role full access on event_tickets" on event_tickets for all using (true) with check (true);
+
+alter table reviews enable row level security;
+create policy "Service role full access on reviews" on reviews for all using (true) with check (true);
+
+alter table notifications enable row level security;
+create policy "Service role full access on notifications" on notifications for all using (true) with check (true);
+
+alter table disputes enable row level security;
+create policy "Service role full access on disputes" on disputes for all using (true) with check (true);
+
+alter table coupons enable row level security;
+create policy "Service role full access on coupons" on coupons for all using (true) with check (true);
+
+alter table chat_threads enable row level security;
+create policy "Service role full access on chat_threads" on chat_threads for all using (true) with check (true);
+
+alter table chat_messages enable row level security;
+create policy "Service role full access on chat_messages" on chat_messages for all using (true) with check (true);
+
+alter table location_updates enable row level security;
+create policy "Service role full access on location_updates" on location_updates for all using (true) with check (true);

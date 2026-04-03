@@ -1,0 +1,6 @@
+service_categories: id,name,icon_url,is_active
+services: EMPTY
+events: EMPTY
+providers: EMPTY
+bookings: EMPTY
+profiles: id,role,full_name,phone,avatar_url,created_at
