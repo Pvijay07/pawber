@@ -297,6 +297,10 @@ if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
         }
     });
 } else {
+    if (env.NODE_ENV === 'production') {
+        console.error('CRITICAL: PRODUCTION DETECTED BUT SUPABASE_URL IS MISSING! Process Env check:', process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY ? 'HasKey' : 'NoKey');
+        throw new Error('Supabase URL or Key is strictly required in production!');
+    }
     console.log('⚠️ Using local PostgreSQL shim for Supabase');
     const auth = {
         signInWithPassword: async ({ email, password }: any) => {

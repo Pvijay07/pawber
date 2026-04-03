@@ -29,8 +29,8 @@ const envSchema = z.object({
     JWT_SECRET: z.string().optional(),
 
     // Supabase
-    SUPABASE_URL: z.string().optional(),
-    SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+    SUPABASE_URL: z.string().trim().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().trim().optional(),
 });
 
 function loadEnv() {
@@ -45,6 +45,7 @@ function loadEnv() {
             ...process.env,
         });
     }
+    console.log('✅ ENV LOADED. Keys present:', Object.keys(parsed.data).filter(k => !!(parsed.data as any)[k]).join(', '));
     return parsed.data;
 }
 
