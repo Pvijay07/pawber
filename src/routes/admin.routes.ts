@@ -25,7 +25,6 @@ adminRouter.get('/dashboard', async (_req: AuthRequest, res: Response, next: Nex
         const { data: recentBookings } = await supabaseAdmin
             .from('bookings')
             .select('*, user:profiles(full_name), service:services(name)')
-            .is('id', null) // satisfies types
             .order('created_at', { ascending: false })
             .limit(10);
 

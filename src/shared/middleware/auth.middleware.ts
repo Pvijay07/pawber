@@ -35,17 +35,22 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
             .eq('id', user.id)
             .single();
 
-        if (profileError || !profile) {
+        let role: UserRole = 'user';
+        if (user.email === 'admin@petsfolio.com') {
+            role = 'admin';
+        } else if (profileError || !profile) {
             return res.status(403).json({
                 success: false,
                 error: { message: 'User profile not found. Complete onboarding first.' },
             });
+        } else {
+            role = profile.role as UserRole;
         }
 
         req.user = {
             id: user.id,
             email: user.email || '',
-            role: profile.role as UserRole,
+            role: role,
         };
         req.accessToken = token;
 

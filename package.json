@@ -6,7 +6,7 @@
     "scripts": {
         "dev": "tsx watch src/server.ts",
         "dev:legacy": "tsx watch src/index.ts",
-        "build": "tsc",
+        "build": "tsc && (if not exist \"dist/db\" mkdir \"dist/db\") && (copy \"src/db/*.sql\" \"dist/db/\")",
         "start": "node dist/server.js",
         "migrate": "tsx src/db/migrate.ts",
         "seed:packages": "tsx scripts/seed_packages.ts"
