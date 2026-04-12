@@ -51,23 +51,7 @@ export function createApp() {
     // ─── Logging ────────────────────────────────────
     app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-    app.get('/health', (_req, res) => {
-        res.json({
-            success: true,
-            data: {
-                status: 'ok',
-                service: 'PetCare API',
-                version: '4.0.0',
-                timestamp: new Date().toISOString(),
-                environment: env.NODE_ENV,
-                supabaseKeyCheck: !!env.SUPABASE_SERVICE_ROLE_KEY,
-                supabaseUrlCheck: !!env.SUPABASE_URL,
-                rawUrlVal: env.SUPABASE_URL ? env.SUPABASE_URL.substring(0, 10) + '...' : null,
-                allKeys: Object.keys(env).join(','),
-                registeredRoutes: require('express-list-endpoints')(app).map((r: any) => r.path)
-            },
-        });
-    });
+    // (Moved to bottom for full route visibility)
 
     // ─── API v1 Routes ──────────────────────────────
     const v1 = express.Router();
@@ -104,6 +88,24 @@ export function createApp() {
 
     app.use('/api', v1);
 
+
+    app.get('/health', (_req, res) => {
+        res.json({
+            success: true,
+            data: {
+                status: 'ok',
+                service: 'PetCare API',
+                version: '4.0.0',
+                timestamp: new Date().toISOString(),
+                environment: env.NODE_ENV,
+                supabaseKeyCheck: !!env.SUPABASE_SERVICE_ROLE_KEY,
+                supabaseUrlCheck: !!env.SUPABASE_URL,
+                rawUrlVal: env.SUPABASE_URL ? env.SUPABASE_URL.substring(0, 10) + '...' : null,
+                allKeys: Object.keys(env).join(','),
+                registeredRoutes: require('express-list-endpoints')(app).map((r: any) => r.path)
+            },
+        });
+    });
 
     // ─── 404 Handler ────────────────────────────────
     app.use((_req, res) => {
