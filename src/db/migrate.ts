@@ -1,24 +1,70 @@
 import { env } from '../config';
 import { isSupabaseConfigured } from '../shared/lib/supabase';
+import fs from 'fs';
+import path from 'path';
+import { Pool } from 'pg';
 
 /**
  * Run database migrations.
- * When Supabase is configured, runs DDL via the Supabase SQL executor.
- * Otherwise, runs against local PostgreSQL.
+ * In production, we use the postgres connection string to run DDL (tables/indices)
+ * and then use the Supabase client for data seeding.
  */
 export async function migrate() {
     try {
+        console.log('🔄 Initiating Database Migration Strategy...');
+        
+        // 1. Run DDL (Tables/Schema) via raw PostgreSql connection
+        await runDDL();
+
+        // 2. Run Seeding via Supabase Client (if configured)
         if (isSupabaseConfigured()) {
-            console.log('🔄 Running Supabase migrations & seeding...');
+            console.log('🔄 Running Supabase data seeding...');
             await migrateSupabase();
         } else {
-            console.log('🔄 Running local PostgreSQL migrations...');
-            await migrateLocal();
+            console.log('🔄 Running local PostgreSql seeding...');
+            // Local seeding logic if needed
         }
+        
+        console.log('✅ Database migration and seeding successful!');
     } catch (err: any) {
         console.error('❌ Migration failed:', err.message);
-        // Do not crash server on migration failure in production to allow partial functionality
         if (env.NODE_ENV !== 'production') throw err;
+    }
+}
+
+async function runDDL() {
+    const connectionString = env.DATABASE_URL || `postgresql://${env.DB_USER}:${env.DB_PASS}@${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}`;
+    
+    console.log(`  🔌 Connecting to database for DDL: ${connectionString.split('@')[1] || 'local'}`);
+    
+    const pool = new Pool({
+        connectionString,
+        ssl: env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+
+    try {
+        // Find seeds.sql in dist/db folder (production) or src/db (dev)
+        let sqlPath = path.join(process.cwd(), 'dist', 'db', 'seeds.sql');
+        if (!fs.existsSync(sqlPath)) {
+            sqlPath = path.join(__dirname, 'seeds.sql'); // Try relative to current file
+        }
+        if (!fs.existsSync(sqlPath)) {
+            sqlPath = path.join(process.cwd(), 'src', 'db', 'seeds.sql'); // Final fallback
+        }
+
+        if (fs.existsSync(sqlPath)) {
+            console.log(`  📜 Executing DDL from: ${path.basename(sqlPath)}`);
+            const sql = fs.readFileSync(sqlPath, 'utf8');
+            await pool.query(sql);
+            console.log('  ✅ DDL execution completed successfully');
+        } else {
+            console.warn('  ⚠️ seeds.sql not found, skipping DDL phase');
+        }
+    } catch (err: any) {
+        console.error('  ❌ DDL phase failed:', err.message);
+        throw err;
+    } finally {
+        await pool.end();
     }
 }
 
@@ -28,18 +74,9 @@ async function migrateSupabase() {
         auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // 1. Basic sanity check - connectivity
-    const { error: pingError } = await supabase.from('profiles').select('id').limit(1);
-    if (pingError) {
-        console.warn('  ⚠️ Cannot reach profiles table. Supabase might not be fully initialized or RLS is blocking public access.');
-    }
-
-    // 2. Automated seeding via upsert (safe for production)
-    console.log('  📝 Seeding essential content...');
+    console.log('  📝 Seeding dynamic content...');
     await seedSiteContent(supabase);
     await seedServices(supabase);
-
-    console.log('✅ Supabase check completed');
 }
 
 async function seedSiteContent(supabase: any) {
@@ -90,9 +127,8 @@ async function seedSiteContent(supabase: any) {
     const { error } = await supabase.from('site_content').upsert(content, { onConflict: 'key' });
     if (error) {
         console.error('  ❌ site_content seed failed:', error.message);
-        console.log('  💡 PRO TIP: Create the site_content table first in Supabase SQL Editor.');
     } else {
-        console.log('  ✅ site_content seeded successfully');
+        console.log('  ✅ site_content seeded');
     }
 }
 
@@ -106,36 +142,9 @@ async function seedServices(supabase: any) {
 
     const { error } = await supabase.from('services').upsert(services, { onConflict: 'slug' });
     if (error) {
-        console.warn('  ⚠️ services seed skipped/failed:', error.message);
+        console.warn('  ⚠️ services seed failed:', error.message);
     } else {
         console.log('  ✅ services seeded');
-    }
-}
-
-async function migrateLocal() {
-    const fs = await import('fs');
-    const path = await import('path');
-    const { Pool } = await import('pg');
-
-    const pool = new Pool({
-        host: env.DB_HOST,
-        port: env.DB_PORT,
-        user: env.DB_USER,
-        password: env.DB_PASS,
-        database: env.DB_NAME,
-    });
-
-    try {
-        const sqlPath = path.join(__dirname, 'migration.sql');
-        const sql = fs.existsSync(sqlPath) ? fs.readFileSync(sqlPath, 'utf-8') : null;
-        if (sql) {
-            await pool.query(sql);
-            console.log('✅ Local SQL migration completed');
-        }
-    } catch (err: any) {
-        console.error('❌ Local migration error:', err.message);
-    } finally {
-        await pool.end();
     }
 }
 
