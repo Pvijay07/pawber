@@ -29,13 +29,36 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
         }
 
         // Fetch role from profiles
-        const { data: profile, error: profileError } = await supabaseAdmin
+        let { data: profile, error: profileError } = await supabaseAdmin
             .from('profiles')
             .select('role, full_name')
             .eq('id', user.id)
             .single();
 
-        let role: UserRole = 'user';
+        // SELF-HEALING: If authenticated but profile missing, create one
+        if (profileError && profileError.code === 'PGRST116' || !profile) {
+            console.log(`[AUTH] Profile missing for ${user.email}. Attempting self-healing...`);
+            const { data: newProfile, error: createError } = await supabaseAdmin
+                .from('profiles')
+                .insert({
+                    id: user.id,
+                    email: user.email,
+                    full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+                    role: 'client' // default role
+                })
+                .select('role, full_name')
+                .single();
+
+            if (!createError) {
+                console.log(`[AUTH] Profile auto-created for ${user.email}`);
+                profile = newProfile;
+                profileError = null;
+            } else {
+                console.error(`[AUTH] Self-healing failed for ${user.email}:`, createError.message);
+            }
+        }
+
+        let role: UserRole = 'client';
         if (user.email === 'admin@petsfolio.com') {
             role = 'admin';
         } else if (profileError || !profile) {
@@ -48,13 +71,13 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
                 },
             });
         } else {
-            role = profile.role as UserRole;
+            role = (profile.role as UserRole) || 'client';
         }
 
         req.user = {
             id: user.id,
             email: user.email || '',
-            role: role,
+            role,
         };
         req.accessToken = token;
 

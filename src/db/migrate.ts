@@ -7,12 +7,18 @@ import { isSupabaseConfigured } from '../shared/lib/supabase';
  * Otherwise, runs against local PostgreSQL.
  */
 export async function migrate() {
-    if (isSupabaseConfigured()) {
-        console.log('🔄 Running Supabase migrations...');
-        await migrateSupabase();
-    } else {
-        console.log('🔄 Running local PostgreSQL migrations...');
-        await migrateLocal();
+    try {
+        if (isSupabaseConfigured()) {
+            console.log('🔄 Running Supabase migrations & seeding...');
+            await migrateSupabase();
+        } else {
+            console.log('🔄 Running local PostgreSQL migrations...');
+            await migrateLocal();
+        }
+    } catch (err: any) {
+        console.error('❌ Migration failed:', err.message);
+        // Do not crash server on migration failure in production to allow partial functionality
+        if (env.NODE_ENV !== 'production') throw err;
     }
 }
 
@@ -22,110 +28,87 @@ async function migrateSupabase() {
         auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // ─── Ensure site_content table exists ────────────────
-    // Since we can't run DDL via PostgREST, we check if the table exists
-    // by trying to query it. If it fails with 404, we skip.
-    try {
-        const { error } = await supabase.from('site_content').select('key').limit(1);
-        if (error && error.message?.includes('does not exist')) {
-            console.log('⚠️  site_content table missing. Please create it via Supabase Dashboard SQL Editor:');
-            console.log(`
-CREATE TABLE IF NOT EXISTS public.site_content (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    key TEXT NOT NULL UNIQUE,
-    content JSONB NOT NULL DEFAULT '{}'::jsonb,
-    type TEXT DEFAULT 'content',
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
-);
-ALTER TABLE public.site_content DISABLE ROW LEVEL SECURITY;
-            `);
-        } else if (!error) {
-            console.log('  ✅ site_content table exists');
-            // Seed default content if empty
-            const { data: existing } = await supabase.from('site_content').select('key').limit(1);
-            if (!existing || existing.length === 0) {
-                console.log('  📝 Seeding default homepage content...');
-                await seedSiteContent(supabase);
-            }
-        }
-    } catch (err: any) {
-        console.error('  ⚠️  site_content check failed:', err.message);
+    // 1. Basic sanity check - connectivity
+    const { error: pingError } = await supabase.from('profiles').select('id').limit(1);
+    if (pingError) {
+        console.warn('  ⚠️ Cannot reach profiles table. Supabase might not be fully initialized or RLS is blocking public access.');
     }
 
-    // ─── Verify critical tables exist ────────────────────
-    const tables = ['profiles', 'pets', 'wallets', 'services', 'bookings'];
-    for (const table of tables) {
-        const { error } = await supabase.from(table).select('*', { count: 'exact', head: true });
-        if (error) {
-            console.error(`  ❌ Table "${table}" check failed:`, error.message);
-        } else {
-            console.log(`  ✅ ${table} table OK`);
-        }
-    }
+    // 2. Automated seeding via upsert (safe for production)
+    console.log('  📝 Seeding essential content...');
+    await seedSiteContent(supabase);
+    await seedServices(supabase);
 
-    console.log('✅ Supabase migration check completed');
+    console.log('✅ Supabase check completed');
 }
 
 async function seedSiteContent(supabase: any) {
     const content = [
         {
-            key: 'hero_banner',
-            type: 'content',
+            key: 'client_how_it_works',
+            type: 'steps',
             is_active: true,
-            content: {
-                title: 'Premium Pet Care',
-                subtitle: 'Professional services for your furry friends',
-                cta_text: 'Book Now',
-                image_url: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800',
-            },
+            content: [
+                { title: 'Choose Service', description: 'Select from grooming, walking, vet visits, or boarding.', icon: 'Scissors' },
+                { title: 'Pick a Pro', description: 'Browse expert profiles, ratings, and book your preferred date/time.', icon: 'Users' },
+                { title: 'Relax & Track', description: 'Track the session live and pay securely via the app.', icon: 'MapPin' }
+            ],
         },
         {
-            key: 'how_it_works',
-            type: 'content',
+            key: 'provider_how_it_works',
+            type: 'steps',
             is_active: true,
-            content: {
-                title: 'How It Works',
-                steps: [
-                    { step: 1, title: 'Choose Service', description: 'Pick from grooming, vet, boarding & more', icon: 'Scissors' },
-                    { step: 2, title: 'Select Provider', description: 'Browse verified professionals near you', icon: 'Users' },
-                    { step: 3, title: 'Book & Pay', description: 'Secure booking with wallet or card', icon: 'CreditCard' },
-                    { step: 4, title: 'Track Live', description: 'Real-time updates on your pet\'s service', icon: 'MapPin' },
-                ],
-            },
+            content: [
+                { title: 'Setup Profile', description: 'List your services, prices, and upload your certifications.', icon: 'Info' },
+                { title: 'Get Requests', description: 'Receive real-time booking requests from pet parents nearby.', icon: 'Bell' },
+                { title: 'Start Earning', description: 'Complete jobs, collect positive reviews, and withdraw earnings daily.', icon: 'Zap' }
+            ],
         },
         {
-            key: 'expert_guide',
-            type: 'content',
+            key: 'client_home_banners',
+            type: 'banners',
             is_active: true,
-            content: {
-                title: 'Expert Pet Guide',
-                articles: [
-                    { title: 'Grooming Tips', description: 'Keep your pet looking their best', icon: 'Sparkles' },
-                    { title: 'Health Checkup Guide', description: 'When to visit the vet', icon: 'Heart' },
-                    { title: 'Training Basics', description: 'Build good habits early', icon: 'GraduationCap' },
-                ],
-            },
-        },
-        {
-            key: 'app_config',
-            type: 'config',
-            is_active: true,
-            content: {
-                support_email: 'support@pawber.com',
-                support_phone: '+91 98765 43210',
-                min_wallet_topup: 100,
-                max_wallet_topup: 10000,
-            },
-        },
+            content: [
+                {
+                    title: 'Professional Grooming at Home',
+                    subtitle: 'Get 20% off on your first spa session',
+                    image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&q=80&w=800&h=400',
+                    action: 'bookingFlow',
+                    serviceId: 'grooming'
+                },
+                {
+                    title: 'Certified Vet Consultations',
+                    subtitle: 'Talk to an expert instantly',
+                    image: 'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?auto=format&fit=crop&q=80&w=800&h=400',
+                    action: 'bookingFlow',
+                    serviceId: 'vet'
+                }
+            ],
+        }
     ];
 
     const { error } = await supabase.from('site_content').upsert(content, { onConflict: 'key' });
     if (error) {
-        console.error('  ❌ Seed failed:', error.message);
+        console.error('  ❌ site_content seed failed:', error.message);
+        console.log('  💡 PRO TIP: Create the site_content table first in Supabase SQL Editor.');
     } else {
-        console.log('  ✅ Default content seeded');
+        console.log('  ✅ site_content seeded successfully');
+    }
+}
+
+async function seedServices(supabase: any) {
+    const services = [
+        { name: 'Grooming', slug: 'grooming', description: 'Complete grooming and spa', category: 'care', is_active: true },
+        { name: 'Vet Visit', slug: 'vet', description: 'Professional vet care', category: 'health', is_active: true },
+        { name: 'Boarding', slug: 'boarding', description: 'Safe pet stays', category: 'stay', is_active: true },
+        { name: 'Dog Walking', slug: 'walking', description: 'Daily exercise for your pet', category: 'exercise', is_active: true }
+    ];
+
+    const { error } = await supabase.from('services').upsert(services, { onConflict: 'slug' });
+    if (error) {
+        console.warn('  ⚠️ services seed skipped/failed:', error.message);
+    } else {
+        console.log('  ✅ services seeded');
     }
 }
 
@@ -144,15 +127,13 @@ async function migrateLocal() {
 
     try {
         const sqlPath = path.join(__dirname, 'migration.sql');
-        if (!fs.existsSync(sqlPath)) {
-            console.log('⚠️  No migration.sql found, skipping...');
-            return;
+        const sql = fs.existsSync(sqlPath) ? fs.readFileSync(sqlPath, 'utf-8') : null;
+        if (sql) {
+            await pool.query(sql);
+            console.log('✅ Local SQL migration completed');
         }
-        const sql = fs.readFileSync(sqlPath, 'utf-8');
-        await pool.query(sql);
-        console.log('✅ Local migration completed');
     } catch (err: any) {
-        console.error('❌ Migration error:', err.message);
+        console.error('❌ Local migration error:', err.message);
     } finally {
         await pool.end();
     }
