@@ -19,6 +19,7 @@ import { providersRouter } from './modules/providers';
 import { slotsRouter } from './modules/slots';
 import { paymentsRouter } from './modules/payments';
 import { debugRouter } from './modules/debug/debug.routes';
+import { contentRouter } from './routes/content.routes';
 
 // ─── Legacy Module Shims (to be migrated) ───────
 import { adminRouter } from './modules/admin';
@@ -90,6 +91,7 @@ export function createApp() {
 
     // Debug helpers
     v1.use('/debug', debugRouter);
+    v1.use('/content', contentRouter);
 
     v1.get('/health', (_req, res) => {
         res.json({ success: true, data: { status: 'ok' } });
