@@ -102,7 +102,10 @@ export function createApp() {
                 supabaseUrlCheck: !!env.SUPABASE_URL,
                 rawUrlVal: env.SUPABASE_URL ? env.SUPABASE_URL.substring(0, 10) + '...' : null,
                 allKeys: Object.keys(env).join(','),
-                registeredRoutes: require('express-list-endpoints')(app).map((r: any) => r.path)
+                registeredRoutes: [
+                    '/api/auth', '/api/debug/db', '/api/debug/auth-test', 
+                    '/api/content/homepage', '/api/health', '/api/routes'
+                ]
             },
         });
     });
