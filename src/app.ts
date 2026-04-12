@@ -53,59 +53,37 @@ export function createApp() {
 
     // (Moved to bottom for full route visibility)
 
-    // ─── API v1 Routes ──────────────────────────────
-    const v1 = express.Router();
+    // ─── API Routes (Flattened for reliability) ────
+    app.use('/api/auth', authRouter);
+    app.use('/api/bookings', bookingsRouter);
+    app.use('/api/services', servicesRouter);
+    app.use('/api/pets', petsRouter);
+    app.use('/api/wallet', walletRouter);
+    app.use('/api/events', eventsRouter);
+    app.use('/api/notifications', notificationsRouter);
+    app.use('/api/reviews', reviewsRouter);
+    app.use('/api/providers', providersRouter);
+    app.use('/api/slots', slotsRouter);
+    app.use('/api/payments', paymentsRouter);
+    app.use('/api/admin', adminRouter);
+    app.use('/api/webhooks', webhooksRouter);
+    app.use('/api/debug', debugRouter);
+    app.use('/api/content', contentRouter);
 
-    // Fully migrated modules
-    v1.use('/auth', authRouter);
-    v1.use('/bookings', bookingsRouter);
-    v1.use('/services', servicesRouter);
-    v1.use('/pets', petsRouter);
-    v1.use('/wallet', walletRouter);
-    v1.use('/events', eventsRouter);
-    v1.use('/notifications', notificationsRouter);
-    v1.use('/reviews', reviewsRouter);
-    v1.use('/providers', providersRouter);
-    v1.use('/slots', slotsRouter);
-    v1.use('/payments', paymentsRouter);
-
-    // Legacy shims (same functionality, to be refactored)
-    v1.use('/admin', adminRouter);
-    v1.use('/webhooks', webhooksRouter);
-
-    // Debug helpers
-    v1.use('/debug', debugRouter);
-    v1.use('/content', contentRouter);
-
-    v1.get('/health', (_req, res) => {
-        res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString() } });
+    app.get('/api/health', (_req, res) => {
+        res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString(), message: 'Flattened V2' } });
     });
-
-    v1.get('/routes', (req, res) => {
-        const listEndpoints = require('express-list-endpoints');
-        res.json({ success: true, routes: listEndpoints(app) });
-    });
-
-    app.use('/api', v1);
-
 
     app.get('/health', (_req, res) => {
+        const routes = require('express-list-endpoints')(app).map((r: any) => r.path);
+        console.log('✅ Registered Routes:', routes.join(', '));
         res.json({
             success: true,
             data: {
                 status: 'ok',
-                service: 'PetCare API',
-                version: '4.0.0',
+                version: '4.1.0',
                 timestamp: new Date().toISOString(),
-                environment: env.NODE_ENV,
-                supabaseKeyCheck: !!env.SUPABASE_SERVICE_ROLE_KEY,
-                supabaseUrlCheck: !!env.SUPABASE_URL,
-                rawUrlVal: env.SUPABASE_URL ? env.SUPABASE_URL.substring(0, 10) + '...' : null,
-                allKeys: Object.keys(env).join(','),
-                registeredRoutes: [
-                    '/api/auth', '/api/debug/db', '/api/debug/auth-test', 
-                    '/api/content/homepage', '/api/health', '/api/routes'
-                ]
+                registeredRoutes: routes
             },
         });
     });
