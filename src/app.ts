@@ -94,7 +94,12 @@ export function createApp() {
     v1.use('/content', contentRouter);
 
     v1.get('/health', (_req, res) => {
-        res.json({ success: true, data: { status: 'ok' } });
+        res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString() } });
+    });
+
+    v1.get('/routes', (req, res) => {
+        const listEndpoints = require('express-list-endpoints');
+        res.json({ success: true, routes: listEndpoints(app) });
     });
 
     app.use('/api', v1);
