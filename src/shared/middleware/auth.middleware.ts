@@ -39,9 +39,13 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
         if (user.email === 'admin@petsfolio.com') {
             role = 'admin';
         } else if (profileError || !profile) {
+            console.error('[AUTH] Profile lookup failed for user:', user.id, user.email, 'Error:', profileError, 'Profile:', profile);
             return res.status(403).json({
                 success: false,
-                error: { message: 'User profile not found. Complete onboarding first.' },
+                error: { 
+                    message: 'User profile not found. Complete onboarding first.',
+                    debug: { userId: user.id, profileError: profileError?.message, hasProfile: !!profile }
+                },
             });
         } else {
             role = profile.role as UserRole;
