@@ -64,7 +64,7 @@ export function createApp() {
                 supabaseUrlCheck: !!env.SUPABASE_URL,
                 rawUrlVal: env.SUPABASE_URL ? env.SUPABASE_URL.substring(0, 10) + '...' : null,
                 allKeys: Object.keys(env).join(','),
-                processEnvKeys: Object.keys(process.env).join(',')
+                registeredRoutes: require('express-list-endpoints')(app).map((r: any) => r.path)
             },
         });
     });

@@ -24,7 +24,8 @@
         "razorpay": "^2.9.4",
         "swagger-jsdoc": "^6.2.8",
         "swagger-ui-express": "^5.0.1",
-        "zod": "^3.23.8"
+        "zod": "^3.23.8",
+        "express-list-endpoints": "^7.1.1"
     },
     "devDependencies": {
         "@types/cors": "^2.8.17",
