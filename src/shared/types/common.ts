@@ -12,7 +12,7 @@ export interface AuthRequest extends Request {
     accessToken?: string;
 }
 
-export type UserRole = 'user' | 'provider' | 'admin';
+export type UserRole = 'client' | 'provider' | 'admin' | 'user';
 
 /**
  * Standard service result pattern.
