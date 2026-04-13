@@ -76,6 +76,10 @@ export function createApp() {
     // Registering directly with logging
     console.log('📦 Registering API Modules...');
     
+    app.get('/api/test-direct', (req, res) => {
+        res.json({ success: true, message: 'This is directly on app - DEFINITIVE v4.2.1' });
+    });
+
     app.use('/api/auth', authRouter);
     app.use('/api/content', contentRouter);
     app.use('/api/services', servicesRouter);
