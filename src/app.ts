@@ -27,34 +27,59 @@ import { webhooksRouter } from './modules/webhooks';
 
 /**
  * Creates and configures the Express application.
- * Separated from server.ts so it can be imported for testing.
  */
 export function createApp() {
     const app = express();
     app.set('trust proxy', 1);
 
-    // ─── Documentation ──────────────────────────────
-    setupSwagger(app);
+    console.log('🏁 Initializing PetCare API App...');
 
+    // ─── CRITICAL: Health Checks FIRST (No Middleware) ──────────
+    app.get('/health', (_req, res) => {
+        let routes = [];
+        try {
+            routes = require('express-list-endpoints')(app).map((r: any) => r.path);
+        } catch (e) {}
+        
+        res.json({
+            success: true,
+            data: {
+                status: 'ok',
+                version: '4.2.0',
+                timestamp: new Date().toISOString(),
+                commit: process.env.RENDER_GIT_COMMIT || 'development',
+                routes_count: routes.length,
+                registeredRoutes: routes
+            },
+        });
+    });
 
-    // ─── Security ───────────────────────────────────
+    app.get('/api/v2-health', (_req, res) => {
+        res.json({ 
+            success: true, 
+            data: { 
+                status: 'ok', 
+                message: 'Flattened V2 DEFINITIVE - TOP LEVEL',
+                timestamp: new Date().toISOString()
+            } 
+        });
+    });
+
+    // ─── Basic Middleware ───────────────────────────
     app.use(helmet());
     app.use(cors(corsConfig));
-
-    // ─── Rate Limiting ──────────────────────────────
-    app.use('/api', apiLimiter);
-
-    // ─── Parsing ────────────────────────────────────
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
+    app.use(morgan('dev'));
 
-    // ─── Logging ────────────────────────────────────
-    app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-
-    // ─── API Routes (Flattened for reliability) ────
+    // ─── API Routes ────────────────────────────────
+    // Registering directly with logging
+    console.log('📦 Registering API Modules...');
+    
     app.use('/api/auth', authRouter);
-    app.use('/api/bookings', bookingsRouter);
+    app.use('/api/content', contentRouter);
     app.use('/api/services', servicesRouter);
+    app.use('/api/bookings', bookingsRouter);
     app.use('/api/pets', petsRouter);
     app.use('/api/wallet', walletRouter);
     app.use('/api/events', eventsRouter);
@@ -66,43 +91,13 @@ export function createApp() {
     app.use('/api/admin', adminRouter);
     app.use('/api/webhooks', webhooksRouter);
     app.use('/api/debug', debugRouter);
-    app.use('/api/content', contentRouter);
 
-    // Experimental definitive route for verification
-    app.use('/api/v2-health', (_req, res) => {
-        res.json({ 
-            success: true, 
-            data: { 
-                status: 'ok', 
-                timestamp: new Date().toISOString(), 
-                message: 'Flattened V2 DEFINITIVE',
-                commit: process.env.RENDER_GIT_COMMIT || 'development'
-            } 
-        });
-    });
+    // ─── Last Resort: Documentation & Rate Limiting ──
+    setupSwagger(app);
+    // Moved limiter to the bottom or specific routes to prevent blocking
+    app.use('/api', apiLimiter);
 
-    app.get('/health', (_req, res) => {
-        // We use try-catch here to ensure health check never fails due to audit libraries
-        let routes = [];
-        try {
-            routes = require('express-list-endpoints')(app).map((r: any) => r.path);
-        } catch (e) {
-            routes = ['audit-failed'];
-        }
-        
-        res.json({
-            success: true,
-            data: {
-                status: 'ok',
-                version: '4.1.5',
-                timestamp: new Date().toISOString(),
-                commit: process.env.RENDER_GIT_COMMIT || 'development',
-                registeredRoutes: routes
-            },
-        });
-    });
-
-    // ─── 404 Handler ────────────────────────────────
+    // ─── 404 & Error Handlers ───────────────────────
     app.use((_req, res) => {
         res.status(404).json({
             success: false,
@@ -110,8 +105,8 @@ export function createApp() {
         });
     });
 
-    // ─── Global Error Handler ───────────────────────
     app.use(errorHandler);
 
+    console.log('✅ App setup complete.');
     return app;
 }
