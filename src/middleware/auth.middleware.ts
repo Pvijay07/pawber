@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { supabaseAdmin } from '../lib/supabase';
 import { AuthRequest, UserRole } from '../shared/types';
+export { AuthRequest };
 
 /**
  * Verifies the Supabase JWT token from Authorization header.

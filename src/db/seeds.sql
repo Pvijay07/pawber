@@ -57,7 +57,22 @@ INSERT INTO site_content (key, type, content) VALUES (
   ]'
 ) ON CONFLICT (key) DO UPDATE SET content = EXCLUDED.content;
 
--- Ensure wallets for all users
-INSERT INTO public.wallets (user_id, balance)
-SELECT id, 0 FROM public.profiles
-ON CONFLICT (user_id) DO NOTHING;
+
+-- 5. Ensure services table
+CREATE TABLE IF NOT EXISTS public.services (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    description TEXT,
+    category TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Seed services
+INSERT INTO public.services (name, slug, description, category) VALUES
+('Grooming', 'grooming', 'Complete grooming and spa', 'care'),
+('Vet Visit', 'vet', 'Professional vet care', 'health'),
+('Boarding', 'boarding', 'Safe pet stays', 'stay'),
+('Dog Walking', 'walking', 'Daily exercise for your pet', 'exercise')
+ON CONFLICT (slug) DO NOTHING;
