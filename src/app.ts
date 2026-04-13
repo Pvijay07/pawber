@@ -19,7 +19,7 @@ import { providersRouter } from './modules/providers';
 import { slotsRouter } from './modules/slots';
 import { paymentsRouter } from './modules/payments';
 import { debugRouter } from './modules/debug/debug.routes';
-import { contentRouter } from './routes/content.routes';
+import { contentRouter } from './modules/content';
 
 // ─── Legacy Module Shims (to be migrated) ───────
 import { adminRouter } from './modules/admin';

@@ -24,34 +24,62 @@ const providers_1 = require("./modules/providers");
 const slots_1 = require("./modules/slots");
 const payments_1 = require("./modules/payments");
 const debug_routes_1 = require("./modules/debug/debug.routes");
-const content_routes_1 = require("./routes/content.routes");
+const content_1 = require("./modules/content");
 // ─── Legacy Module Shims (to be migrated) ───────
 const admin_1 = require("./modules/admin");
 const webhooks_1 = require("./modules/webhooks");
 /**
  * Creates and configures the Express application.
- * Separated from server.ts so it can be imported for testing.
  */
 function createApp() {
     const app = (0, express_1.default)();
     app.set('trust proxy', 1);
-    // ─── Documentation ──────────────────────────────
-    (0, swagger_1.setupSwagger)(app);
-    // ─── Security ───────────────────────────────────
+    console.log('🏁 Initializing PetCare API App...');
+    // ─── CRITICAL: Health Checks FIRST (No Middleware) ──────────
+    app.get('/health', (_req, res) => {
+        let routes = [];
+        try {
+            routes = require('express-list-endpoints')(app).map((r) => r.path);
+        }
+        catch (e) { }
+        res.json({
+            success: true,
+            data: {
+                status: 'ok',
+                version: '4.2.0',
+                timestamp: new Date().toISOString(),
+                commit: process.env.RENDER_GIT_COMMIT || 'development',
+                routes_count: routes.length,
+                registeredRoutes: routes
+            },
+        });
+    });
+    app.get('/api/v2-health', (_req, res) => {
+        res.json({
+            success: true,
+            data: {
+                status: 'ok',
+                message: 'Flattened V2 DEFINITIVE - TOP LEVEL',
+                timestamp: new Date().toISOString()
+            }
+        });
+    });
+    // ─── Basic Middleware ───────────────────────────
     app.use((0, helmet_1.default)());
     app.use((0, cors_1.default)(config_1.corsConfig));
-    // ─── Rate Limiting ──────────────────────────────
-    app.use('/api/', middleware_1.apiLimiter);
-    // ─── Parsing ────────────────────────────────────
     app.use(express_1.default.json({ limit: '10mb' }));
     app.use(express_1.default.urlencoded({ extended: true }));
-    // ─── Logging ────────────────────────────────────
-    app.use((0, morgan_1.default)(config_1.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-    // (Moved to bottom for full route visibility)
-    // ─── API Routes (Flattened for reliability) ────
+    app.use((0, morgan_1.default)('dev'));
+    // ─── API Routes ────────────────────────────────
+    // Registering directly with logging
+    console.log('📦 Registering API Modules...');
+    app.get('/api/test-direct', (req, res) => {
+        res.json({ success: true, message: 'This is directly on app - DEFINITIVE v4.2.1' });
+    });
     app.use('/api/auth', auth_1.authRouter);
-    app.use('/api/bookings', bookings_1.bookingsRouter);
+    app.use('/api/content', content_1.contentRouter);
     app.use('/api/services', services_1.servicesRouter);
+    app.use('/api/bookings', bookings_1.bookingsRouter);
     app.use('/api/pets', pets_1.petsRouter);
     app.use('/api/wallet', wallet_1.walletRouter);
     app.use('/api/events', events_1.eventsRouter);
@@ -63,32 +91,19 @@ function createApp() {
     app.use('/api/admin', admin_1.adminRouter);
     app.use('/api/webhooks', webhooks_1.webhooksRouter);
     app.use('/api/debug', debug_routes_1.debugRouter);
-    app.use('/api/content', content_routes_1.contentRouter);
-    app.get('/api/health', (_req, res) => {
-        res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString(), message: 'Flattened V2' } });
-    });
-    app.get('/health', (_req, res) => {
-        const routes = require('express-list-endpoints')(app).map((r) => r.path);
-        console.log('✅ Registered Routes:', routes.join(', '));
-        res.json({
-            success: true,
-            data: {
-                status: 'ok',
-                version: '4.1.0',
-                timestamp: new Date().toISOString(),
-                registeredRoutes: routes
-            },
-        });
-    });
-    // ─── 404 Handler ────────────────────────────────
+    // ─── Last Resort: Documentation & Rate Limiting ──
+    (0, swagger_1.setupSwagger)(app);
+    // Moved limiter to the bottom or specific routes to prevent blocking
+    app.use('/api', middleware_1.apiLimiter);
+    // ─── 404 & Error Handlers ───────────────────────
     app.use((_req, res) => {
         res.status(404).json({
             success: false,
             error: { message: 'Route not found' },
         });
     });
-    // ─── Global Error Handler ───────────────────────
     app.use(middleware_1.errorHandler);
+    console.log('✅ App setup complete.');
     return app;
 }
 //# sourceMappingURL=app.js.map
