@@ -19,7 +19,7 @@ import { providersRouter } from './modules/providers';
 import { slotsRouter } from './modules/slots';
 import { paymentsRouter } from './modules/payments';
 import { debugRouter } from './modules/debug/debug.routes';
-import { contentRouter } from './modules/content';
+import { contentRouter } from './modules/content.routes';
 
 // ─── Legacy Module Shims (to be migrated) ───────
 import { adminRouter } from './modules/admin';
@@ -43,7 +43,7 @@ export function createApp() {
             success: true,
             data: {
                 status: 'ok',
-                version: '4.4.0',
+                version: '4.4.1',
                 timestamp: new Date().toISOString(),
                 commit: process.env.RENDER_GIT_COMMIT || 'development',
                 routes_count: routes.length

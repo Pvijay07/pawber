@@ -24,7 +24,7 @@ const providers_1 = require("./modules/providers");
 const slots_1 = require("./modules/slots");
 const payments_1 = require("./modules/payments");
 const debug_routes_1 = require("./modules/debug/debug.routes");
-const content_1 = require("./modules/content");
+const content_routes_1 = require("./modules/content.routes");
 // ─── Legacy Module Shims (to be migrated) ───────
 const admin_1 = require("./modules/admin");
 const webhooks_1 = require("./modules/webhooks");
@@ -34,8 +34,7 @@ const webhooks_1 = require("./modules/webhooks");
 function createApp() {
     const app = (0, express_1.default)();
     app.set('trust proxy', 1);
-    console.log('🏁 Initializing PetCare API App...');
-    // ─── CRITICAL: Health Checks FIRST (No Middleware) ──────────
+    // ─── Health Check ───────────────────────────────
     app.get('/health', (_req, res) => {
         let routes = [];
         try {
@@ -46,22 +45,11 @@ function createApp() {
             success: true,
             data: {
                 status: 'ok',
-                version: '4.2.0',
+                version: '4.4.1',
                 timestamp: new Date().toISOString(),
                 commit: process.env.RENDER_GIT_COMMIT || 'development',
-                routes_count: routes.length,
-                registeredRoutes: routes
+                routes_count: routes.length
             },
-        });
-    });
-    app.get('/api/v2-health', (_req, res) => {
-        res.json({
-            success: true,
-            data: {
-                status: 'ok',
-                message: 'Flattened V2 DEFINITIVE - TOP LEVEL',
-                timestamp: new Date().toISOString()
-            }
         });
     });
     // ─── Basic Middleware ───────────────────────────
@@ -69,15 +57,10 @@ function createApp() {
     app.use((0, cors_1.default)(config_1.corsConfig));
     app.use(express_1.default.json({ limit: '10mb' }));
     app.use(express_1.default.urlencoded({ extended: true }));
-    app.use((0, morgan_1.default)('dev'));
-    // ─── API Routes ────────────────────────────────
-    // Registering directly with logging
-    console.log('📦 Registering API Modules...');
-    app.get('/api/test-direct', (req, res) => {
-        res.json({ success: true, message: 'This is directly on app - DEFINITIVE v4.2.1' });
-    });
+    app.use((0, morgan_1.default)(config_1.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+    // ─── API Routes (Flattened) ────────────────────
     app.use('/api/auth', auth_1.authRouter);
-    app.use('/api/content', content_1.contentRouter);
+    app.use('/api/content', content_routes_1.contentRouter);
     app.use('/api/services', services_1.servicesRouter);
     app.use('/api/bookings', bookings_1.bookingsRouter);
     app.use('/api/pets', pets_1.petsRouter);
@@ -91,9 +74,9 @@ function createApp() {
     app.use('/api/admin', admin_1.adminRouter);
     app.use('/api/webhooks', webhooks_1.webhooksRouter);
     app.use('/api/debug', debug_routes_1.debugRouter);
-    // ─── Last Resort: Documentation & Rate Limiting ──
+    // ─── Swagger ────────────────────────────────────
     (0, swagger_1.setupSwagger)(app);
-    // Moved limiter to the bottom or specific routes to prevent blocking
+    // Rate Limiter at the bottom
     app.use('/api', middleware_1.apiLimiter);
     // ─── 404 & Error Handlers ───────────────────────
     app.use((_req, res) => {
@@ -103,7 +86,6 @@ function createApp() {
         });
     });
     app.use(middleware_1.errorHandler);
-    console.log('✅ App setup complete.');
     return app;
 }
 //# sourceMappingURL=app.js.map
