@@ -32,9 +32,13 @@ export function createApp() {
     const app = express();
     app.set('trust proxy', 1);
 
-    console.log('🏁 Initializing PetCare API App...');
+    // ─── CRITICAL GLOBAL DEBUG LOGGER ────────────────
+    app.use((req, _res, next) => {
+        console.log(`🔍 [${new Date().toISOString()}] ${req.method} ${req.url} - (Host: ${req.get('host')})`);
+        next();
+    });
 
-    // ─── CRITICAL: Health Checks FIRST (No Middleware) ──────────
+    // ─── Health Checks FIRST (No Middleware Suspects) ─
     app.get('/health', (_req, res) => {
         let routes = [];
         try {
@@ -45,7 +49,7 @@ export function createApp() {
             success: true,
             data: {
                 status: 'ok',
-                version: '4.2.0',
+                version: '4.3.2',
                 timestamp: new Date().toISOString(),
                 commit: process.env.RENDER_GIT_COMMIT || 'development',
                 routes_count: routes.length,
@@ -54,15 +58,8 @@ export function createApp() {
         });
     });
 
-    app.get('/api/v2-health', (_req, res) => {
-        res.json({ 
-            success: true, 
-            data: { 
-                status: 'ok', 
-                message: 'Flattened V2 DEFINITIVE - TOP LEVEL',
-                timestamp: new Date().toISOString()
-            } 
-        });
+    app.get('/api/test-simple', (_req, res) => {
+        res.json({ success: true, message: 'Simple API check v4.3.2' });
     });
 
     // ─── Basic Middleware ───────────────────────────
@@ -73,13 +70,6 @@ export function createApp() {
     app.use(morgan('dev'));
 
     // ─── API Routes ────────────────────────────────
-    // Registering directly with logging
-    console.log('📦 Registering API Modules...');
-    
-    app.get('/api/test-direct', (req, res) => {
-        res.json({ success: true, message: 'This is directly on app - DEFINITIVE v4.2.1' });
-    });
-
     app.use('/api/auth', authRouter);
     app.use('/api/content', contentRouter);
     app.use('/api/services', servicesRouter);
@@ -96,10 +86,10 @@ export function createApp() {
     app.use('/api/webhooks', webhooksRouter);
     app.use('/api/debug', debugRouter);
 
-    // ─── Last Resort: Documentation & Rate Limiting ──
+    // ─── Swagger ────────────────────────────────────
     setupSwagger(app);
-    // Moved limiter to the bottom or specific routes to prevent blocking
-    app.use('/api', apiLimiter);
+
+    // ─── NO RATE LIMITER FOR NOW (Candidate for 404s) ──
 
     // ─── 404 & Error Handlers ───────────────────────
     app.use((_req, res) => {
@@ -111,6 +101,5 @@ export function createApp() {
 
     app.use(errorHandler);
 
-    console.log('✅ App setup complete.');
     return app;
 }
