@@ -23,7 +23,6 @@ exports.adminRouter.get('/dashboard', async (_req, res, next) => {
         const { data: recentBookings } = await supabase_1.supabaseAdmin
             .from('bookings')
             .select('*, user:profiles(full_name), service:services(name)')
-            .is('id', null) // satisfies types
             .order('created_at', { ascending: false })
             .limit(10);
         // Pending providers

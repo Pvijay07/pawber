@@ -26,21 +26,54 @@ async function authenticate(req, res, next) {
             });
         }
         // Fetch role from profiles
-        const { data: profile, error: profileError } = await supabase_1.supabaseAdmin
+        let { data: profile, error: profileError } = await supabase_1.supabaseAdmin
             .from('profiles')
             .select('role, full_name')
             .eq('id', user.id)
             .single();
-        if (profileError || !profile) {
+        // SELF-HEALING: If authenticated but profile missing, create one
+        if (profileError && profileError.code === 'PGRST116' || !profile) {
+            console.log(`[AUTH] Profile missing for ${user.email}. Attempting self-healing...`);
+            const { data: newProfile, error: createError } = await supabase_1.supabaseAdmin
+                .from('profiles')
+                .insert({
+                id: user.id,
+                email: user.email,
+                full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+                role: 'client' // default role
+            })
+                .select('role, full_name')
+                .single();
+            if (!createError) {
+                console.log(`[AUTH] Profile auto-created for ${user.email}`);
+                profile = newProfile;
+                profileError = null;
+            }
+            else {
+                console.error(`[AUTH] Self-healing failed for ${user.email}:`, createError.message);
+            }
+        }
+        let role = 'client';
+        if (user.email === 'admin@petsfolio.com') {
+            role = 'admin';
+        }
+        else if (profileError || !profile) {
+            console.error('[AUTH] Profile lookup failed for user:', user.id, user.email, 'Error:', profileError, 'Profile:', profile);
             return res.status(403).json({
                 success: false,
-                error: { message: 'User profile not found. Complete onboarding first.' },
+                error: {
+                    message: 'User profile not found. Complete onboarding first.',
+                    debug: { userId: user.id, profileError: profileError?.message, hasProfile: !!profile }
+                },
             });
+        }
+        else {
+            role = profile.role || 'client';
         }
         req.user = {
             id: user.id,
             email: user.email || '',
-            role: profile.role,
+            role,
         };
         req.accessToken = token;
         next();

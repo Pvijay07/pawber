@@ -8,15 +8,15 @@ export declare const signUpSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     password: string;
     email: string;
+    role: "client" | "provider";
     full_name: string;
-    role: "provider" | "client";
     phone?: string | undefined;
 }, {
     password: string;
     email: string;
     full_name: string;
+    role?: "client" | "provider" | undefined;
     phone?: string | undefined;
-    role?: "provider" | "client" | undefined;
 }>;
 export declare const signInSchema: z.ZodObject<{
     email: z.ZodString;

@@ -24,6 +24,7 @@ const providers_1 = require("./modules/providers");
 const slots_1 = require("./modules/slots");
 const payments_1 = require("./modules/payments");
 const debug_routes_1 = require("./modules/debug/debug.routes");
+const content_routes_1 = require("./routes/content.routes");
 // ─── Legacy Module Shims (to be migrated) ───────
 const admin_1 = require("./modules/admin");
 const webhooks_1 = require("./modules/webhooks");
@@ -46,46 +47,39 @@ function createApp() {
     app.use(express_1.default.urlencoded({ extended: true }));
     // ─── Logging ────────────────────────────────────
     app.use((0, morgan_1.default)(config_1.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+    // (Moved to bottom for full route visibility)
+    // ─── API Routes (Flattened for reliability) ────
+    app.use('/api/auth', auth_1.authRouter);
+    app.use('/api/bookings', bookings_1.bookingsRouter);
+    app.use('/api/services', services_1.servicesRouter);
+    app.use('/api/pets', pets_1.petsRouter);
+    app.use('/api/wallet', wallet_1.walletRouter);
+    app.use('/api/events', events_1.eventsRouter);
+    app.use('/api/notifications', notifications_1.notificationsRouter);
+    app.use('/api/reviews', reviews_1.reviewsRouter);
+    app.use('/api/providers', providers_1.providersRouter);
+    app.use('/api/slots', slots_1.slotsRouter);
+    app.use('/api/payments', payments_1.paymentsRouter);
+    app.use('/api/admin', admin_1.adminRouter);
+    app.use('/api/webhooks', webhooks_1.webhooksRouter);
+    app.use('/api/debug', debug_routes_1.debugRouter);
+    app.use('/api/content', content_routes_1.contentRouter);
+    app.get('/api/health', (_req, res) => {
+        res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString(), message: 'Flattened V2' } });
+    });
     app.get('/health', (_req, res) => {
+        const routes = require('express-list-endpoints')(app).map((r) => r.path);
+        console.log('✅ Registered Routes:', routes.join(', '));
         res.json({
             success: true,
             data: {
                 status: 'ok',
-                service: 'PetCare API',
-                version: '4.0.0',
+                version: '4.1.0',
                 timestamp: new Date().toISOString(),
-                environment: config_1.env.NODE_ENV,
-                supabaseKeyCheck: !!config_1.env.SUPABASE_SERVICE_ROLE_KEY,
-                supabaseUrlCheck: !!config_1.env.SUPABASE_URL,
-                rawUrlVal: config_1.env.SUPABASE_URL ? config_1.env.SUPABASE_URL.substring(0, 10) + '...' : null,
-                allKeys: Object.keys(config_1.env).join(','),
-                processEnvKeys: Object.keys(process.env).join(',')
+                registeredRoutes: routes
             },
         });
     });
-    // ─── API v1 Routes ──────────────────────────────
-    const v1 = express_1.default.Router();
-    // Fully migrated modules
-    v1.use('/auth', auth_1.authRouter);
-    v1.use('/bookings', bookings_1.bookingsRouter);
-    v1.use('/services', services_1.servicesRouter);
-    v1.use('/pets', pets_1.petsRouter);
-    v1.use('/wallet', wallet_1.walletRouter);
-    v1.use('/events', events_1.eventsRouter);
-    v1.use('/notifications', notifications_1.notificationsRouter);
-    v1.use('/reviews', reviews_1.reviewsRouter);
-    v1.use('/providers', providers_1.providersRouter);
-    v1.use('/slots', slots_1.slotsRouter);
-    v1.use('/payments', payments_1.paymentsRouter);
-    // Legacy shims (same functionality, to be refactored)
-    v1.use('/admin', admin_1.adminRouter);
-    v1.use('/webhooks', webhooks_1.webhooksRouter);
-    // Debug helpers
-    v1.use('/debug', debug_routes_1.debugRouter);
-    v1.get('/health', (_req, res) => {
-        res.json({ success: true, data: { status: 'ok' } });
-    });
-    app.use('/api', v1);
     // ─── 404 Handler ────────────────────────────────
     app.use((_req, res) => {
         res.status(404).json({

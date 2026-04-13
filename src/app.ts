@@ -81,8 +81,9 @@ export function createApp() {
             success: true,
             data: {
                 status: 'ok',
-                version: '4.1.0',
+                version: '4.1.2',
                 timestamp: new Date().toISOString(),
+                commit: process.env.RENDER_GIT_COMMIT || 'development',
                 registeredRoutes: routes
             },
         });
