@@ -32,13 +32,7 @@ export function createApp() {
     const app = express();
     app.set('trust proxy', 1);
 
-    // ─── CRITICAL GLOBAL DEBUG LOGGER ────────────────
-    app.use((req, _res, next) => {
-        console.log(`🔍 [${new Date().toISOString()}] ${req.method} ${req.url} - (Host: ${req.get('host')})`);
-        next();
-    });
-
-    // ─── Health Checks FIRST (No Middleware Suspects) ─
+    // ─── Health Check ───────────────────────────────
     app.get('/health', (_req, res) => {
         let routes = [];
         try {
@@ -49,17 +43,12 @@ export function createApp() {
             success: true,
             data: {
                 status: 'ok',
-                version: '4.3.2',
+                version: '4.4.0',
                 timestamp: new Date().toISOString(),
                 commit: process.env.RENDER_GIT_COMMIT || 'development',
-                routes_count: routes.length,
-                registeredRoutes: routes
+                routes_count: routes.length
             },
         });
-    });
-
-    app.get('/api/test-simple', (_req, res) => {
-        res.json({ success: true, message: 'Simple API check v4.3.2' });
     });
 
     // ─── Basic Middleware ───────────────────────────
@@ -67,9 +56,9 @@ export function createApp() {
     app.use(cors(corsConfig));
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
-    app.use(morgan('dev'));
+    app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-    // ─── API Routes ────────────────────────────────
+    // ─── API Routes (Flattened) ────────────────────
     app.use('/api/auth', authRouter);
     app.use('/api/content', contentRouter);
     app.use('/api/services', servicesRouter);
@@ -89,7 +78,8 @@ export function createApp() {
     // ─── Swagger ────────────────────────────────────
     setupSwagger(app);
 
-    // ─── NO RATE LIMITER FOR NOW (Candidate for 404s) ──
+    // Rate Limiter at the bottom
+    app.use('/api', apiLimiter);
 
     // ─── 404 & Error Handlers ───────────────────────
     app.use((_req, res) => {
