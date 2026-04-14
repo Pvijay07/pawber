@@ -1,7 +1,7 @@
 import { Router, Response, NextFunction } from 'express';
-import { supabaseAdmin } from '../../shared/lib/supabase';
-import { authenticate } from '../../shared/middleware';
-import { AuthRequest } from '../../shared/types';
+import { supabaseAdmin } from '../shared/lib/supabase';
+import { authenticate } from '../shared/middleware';
+import { AuthRequest } from '../shared/types';
 
 export const contentRouter = Router();
 
