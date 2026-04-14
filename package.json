@@ -8,6 +8,7 @@
         "dev:legacy": "tsx watch src/index.ts",
         "build": "node -e \"const fs=require('fs');if(fs.existsSync('dist')){fs.rmSync('dist',{recursive:true,force:true})}\" && tsc && node -e \"const fs=require('fs');const p=require('path');fs.mkdirSync(p.join('dist','db'),{recursive:true});const src='src/db';if(fs.existsSync(src)){fs.readdirSync(src).filter(f=>f.endsWith('.sql')).forEach(f=>fs.copyFileSync(p.join(src,f),p.join('dist','db',f)))}\"",
         "start": "node dist/server.js",
+        "postinstall": "npm run build",
         "migrate": "tsx src/db/migrate.ts",
         "seed:packages": "tsx scripts/seed_packages.ts"
     },
