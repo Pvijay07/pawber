@@ -8,11 +8,11 @@ const envSchema = z.object({
 
     // Database
     DATABASE_URL: z.string().optional(),
-    DB_HOST: z.string().default('localhost'),
+    DB_HOST: z.string().optional(),
     DB_PORT: z.coerce.number().default(5432),
-    DB_USER: z.string().default('postgres'),
-    DB_PASS: z.string().default(''),
-    DB_NAME: z.string().default('pawber'),
+    DB_USER: z.string().optional(),
+    DB_PASS: z.string().optional(),
+    DB_NAME: z.string().optional(),
 
     // CORS
     CORS_ORIGIN: z.string().default('http://localhost:5173'),

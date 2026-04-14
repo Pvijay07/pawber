@@ -33,13 +33,26 @@ export async function migrate() {
 }
 
 async function runDDL() {
-    const connectionString = env.DATABASE_URL || `postgresql://${env.DB_USER}:${env.DB_PASS}@${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}`;
+    const isProduction = env.NODE_ENV === 'production';
+    const host = env.DB_HOST || 'localhost';
+    const user = env.DB_USER || 'postgres';
+    const pass = env.DB_PASS || '';
+    const name = env.DB_NAME || 'pawber';
+    const port = env.DB_PORT || 5432;
+
+    const connectionString = env.DATABASE_URL || `postgresql://${user}:${pass}@${host}:${port}/${name}`;
     
+    // Prevent connecting to localhost in production if no DATABASE_URL is provided
+    if (isProduction && !env.DATABASE_URL && host === 'localhost') {
+        console.warn('  ⚠️ Skipping DDL phase: DATABASE_URL is missing and DB_HOST is localhost in production.');
+        return;
+    }
+
     console.log(`  🔌 Connecting to database for DDL: ${connectionString.split('@')[1] || 'local'}`);
     
     const pool = new Pool({
         connectionString,
-        ssl: env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+        ssl: isProduction ? { rejectUnauthorized: false } : false
     });
 
     try {
