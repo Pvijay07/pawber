@@ -58,22 +58,35 @@ INSERT INTO site_content (key, type, content) VALUES (
 ) ON CONFLICT (key) DO UPDATE SET content = EXCLUDED.content;
 
 
--- 5. Ensure services table
-CREATE TABLE IF NOT EXISTS public.services (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    slug TEXT UNIQUE NOT NULL,
-    description TEXT,
-    category TEXT,
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Fix for existing tables missing the slug column
+-- 5. Ensure services table structure is up to date
 DO $$ 
 BEGIN 
+    -- Ensure table exists
+    CREATE TABLE IF NOT EXISTS public.services (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        slug TEXT UNIQUE,
+        created_at TIMESTAMPTZ DEFAULT now()
+    );
+
+    -- Ensure slug column exists
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='services' AND column_name='slug') THEN
         ALTER TABLE public.services ADD COLUMN slug TEXT UNIQUE;
+    END IF;
+
+    -- Ensure category column exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='services' AND column_name='category') THEN
+        ALTER TABLE public.services ADD COLUMN category TEXT;
+    END IF;
+
+    -- Ensure description column exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='services' AND column_name='description') THEN
+        ALTER TABLE public.services ADD COLUMN description TEXT;
+    END IF;
+
+    -- Ensure is_active column exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='services' AND column_name='is_active') THEN
+        ALTER TABLE public.services ADD COLUMN is_active BOOLEAN DEFAULT true;
     END IF;
 END $$;
 
