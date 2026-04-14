@@ -69,6 +69,14 @@ CREATE TABLE IF NOT EXISTS public.services (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Fix for existing tables missing the slug column
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='services' AND column_name='slug') THEN
+        ALTER TABLE public.services ADD COLUMN slug TEXT UNIQUE;
+    END IF;
+END $$;
+
 -- Seed services
 INSERT INTO public.services (name, slug, description, category) VALUES
 ('Grooming', 'grooming', 'Complete grooming and spa', 'care'),
