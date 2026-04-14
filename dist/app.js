@@ -24,7 +24,7 @@ const providers_1 = require("./modules/providers");
 const slots_1 = require("./modules/slots");
 const payments_1 = require("./modules/payments");
 const debug_routes_1 = require("./modules/debug/debug.routes");
-const content_1 = require("./modules/content");
+const content_routes_1 = require("./modules/content/content.routes");
 // ─── Legacy Module Shims (to be migrated) ───────
 const admin_1 = require("./modules/admin");
 const webhooks_1 = require("./modules/webhooks");
@@ -60,7 +60,7 @@ function createApp() {
     app.use((0, morgan_1.default)(config_1.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
     // ─── API Routes (Flattened) ────────────────────
     app.use('/api/auth', auth_1.authRouter);
-    app.use('/api/content', content_1.contentRouter);
+    app.use('/api/content', content_routes_1.contentRouter);
     app.use('/api/services', services_1.servicesRouter);
     app.use('/api/bookings', bookings_1.bookingsRouter);
     app.use('/api/pets', pets_1.petsRouter);
