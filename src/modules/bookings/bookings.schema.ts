@@ -15,6 +15,7 @@ export const createBookingSchema = z.object({
     longitude: z.number().optional(),
     notes: z.string().optional(),
     coupon_code: z.string().optional(),
+    points_to_use: z.number().optional().default(0),
 });
 
 export const cancelBookingSchema = z.object({

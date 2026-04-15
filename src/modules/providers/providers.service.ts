@@ -257,7 +257,10 @@ export class ProvidersService {
             .from('bookings')
             .select('status')
             .eq('provider_id', providerId);
-        if (error) return fail(error.message, 500);
+        if (error) {
+            console.error('[ProvidersService.getPerformance] Error:', error);
+            return fail(error.message, 500);
+        }
         const total = data?.length || 0;
         const completed = data?.filter((b: any) => b.status === 'completed').length || 0;
         const cancelled = data?.filter((b: any) => b.status === 'cancelled').length || 0;

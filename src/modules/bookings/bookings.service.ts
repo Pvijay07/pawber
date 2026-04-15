@@ -1,7 +1,6 @@
-import { supabaseAdmin } from '../../shared/lib';
-import { createLogger } from '../../shared/lib/logger';
 import { ServiceResult, ok, fail } from '../../shared/types';
 import { CreateBookingInput, CancelBookingInput, ListBookingsQuery } from './bookings.schema';
+import { loyaltyService } from '../loyalty/loyalty.service';
 
 const log = createLogger('BookingsService');
 
@@ -18,7 +17,7 @@ export class BookingsService {
         const {
             service_id, package_id, booking_type, booking_date,
             slot_id, pet_ids, addon_ids, address, latitude, longitude,
-            notes, coupon_code
+            notes, coupon_code, points_to_use
         } = input;
 
         // 1. Verify package exists & get price
@@ -69,7 +68,29 @@ export class BookingsService {
             total -= couponDiscount;
         }
 
-        total = Math.round(total * 100) / 100;
+        // 3a. Apply Loyalty Reward (Max ₹1500 off)
+        let isLoyaltyReward = false;
+        const loyaltyCheck = await loyaltyService.checkLoyaltyEligibility(userId);
+        if (loyaltyCheck.isEligible) {
+            const rewardAmt = Math.min(total, 1500);
+            total -= rewardAmt;
+            isLoyaltyReward = true;
+            log.info('Loyalty reward applied', { userId, rewardAmt });
+        }
+
+        // 3b. Apply Points Redemption (₹1 per Point)
+        let pointsRedeemed = 0;
+        if (points_to_use && points_to_use > 0) {
+            const { data: wallet } = await supabaseAdmin.from('wallets').select('points_balance').eq('user_id', userId).single();
+            const availablePoints = wallet?.points_balance || 0;
+            pointsRedeemed = Math.min(points_to_use, availablePoints, total);
+            total -= pointsRedeemed;
+            if (pointsRedeemed > 0) {
+                await loyaltyService.debitPoints(userId, pointsRedeemed);
+            }
+        }
+
+        total = Math.max(0, Math.round(total * 100) / 100);
 
         // 4. Lock slot if scheduled
         if (booking_type === 'scheduled' && slot_id) {
@@ -93,6 +114,8 @@ export class BookingsService {
                 longitude,
                 notes,
                 status: booking_type === 'instant' ? 'confirmed' : 'pending',
+                is_loyalty_reward: isLoyaltyReward,
+                points_used: pointsRedeemed
             })
             .select()
             .single();
@@ -260,6 +283,27 @@ export class BookingsService {
             .single();
 
         if (error || !data) return fail('Booking not found', 404);
+
+        // --- Loyalty & Referral Processing on Completion ---
+        if (status === 'completed' && data.total_amount > 0) {
+            // 1. Calculate and credit points (5 per 100)
+            const pointsToEarn = await loyaltyService.calculatePointsToEarn(data.total_amount);
+            if (pointsToEarn > 0) {
+                await loyaltyService.creditPoints(data.user_id, pointsToEarn, 'booking_reward', bookingId);
+                await supabaseAdmin.from('bookings').update({ points_earned: pointsToEarn }).eq('id', bookingId);
+            }
+
+            // 2. Process Referral Reward (if first booking)
+            const { count } = await supabaseAdmin
+                .from('bookings')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', data.user_id)
+                .eq('status', 'completed');
+
+            if (count === 1) {
+                await loyaltyService.processReferralReward(data.user_id);
+            }
+        }
 
         // Notify user
         await supabaseAdmin.from('notifications').insert({

@@ -20,6 +20,8 @@ import { slotsRouter } from './modules/slots';
 import { paymentsRouter } from './modules/payments';
 import { debugRouter } from './modules/debug/debug.routes';
 import { contentRouter } from './modules/site-content.routes';
+import { loyaltyRouter } from './modules/loyalty/loyalty.routes';
+import { aiRouter } from './modules/ai/ai.routes';
 
 // ─── Legacy Module Shims (to be migrated) ───────
 import { adminRouter } from './modules/admin';
@@ -73,6 +75,8 @@ export function createApp() {
     app.use('/api/payments', paymentsRouter);
     app.use('/api/admin', adminRouter);
     app.use('/api/webhooks', webhooksRouter);
+    app.use('/api/loyalty', loyaltyRouter);
+    app.use('/api/ai', aiRouter);
     app.use('/api/debug', debugRouter);
 
     // ─── Swagger ────────────────────────────────────

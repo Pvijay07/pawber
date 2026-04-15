@@ -99,7 +99,7 @@ adminRouter.get('/providers', async (req: AuthRequest, res: Response, next: Next
 
         let query = supabaseAdmin
             .from('providers')
-            .select('*, user:profiles(full_name, email, avatar_url)')
+            .select('*, profiles(full_name, email, avatar_url)')
             .order('created_at', { ascending: false })
             .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
 

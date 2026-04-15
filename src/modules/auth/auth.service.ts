@@ -24,10 +24,16 @@ export class AuthService {
                 return fail(authError.message, 400);
             }
 
-            // Create profile
+            // Create profile with referral code
             const { error: profileError } = await supabaseAdmin
                 .from('profiles')
-                .insert({ id: authData.user.id, role, full_name, phone });
+                .insert({ 
+                    id: authData.user.id, 
+                    role, 
+                    full_name, 
+                    phone,
+                    referral_code: await this.generateUniqueReferralCode()
+                });
 
             if (profileError) {
                 log.error('Supabase profile creation error:', profileError);
@@ -135,6 +141,29 @@ export class AuthService {
     async signOut(accessToken: string): Promise<ServiceResult<any>> {
         await supabaseAdmin.auth.admin.signOut(accessToken);
         return ok({ message: 'Signed out successfully' });
+    }
+
+    private async generateUniqueReferralCode(): Promise<string> {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let isUnique = false;
+        let code = '';
+
+        while (!isUnique) {
+            code = '';
+            for (let i = 0; i < 8; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
+            const { data } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('referral_code', code)
+                .single();
+
+            if (!data) isUnique = true;
+        }
+
+        return code;
     }
 }
 
