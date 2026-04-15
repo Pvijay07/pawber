@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../../shared/lib';
 import { createLogger } from '../../shared/lib/logger';
 import { ServiceResult, ok, fail } from '../../shared/types';
+import { communications, NotificationChannel } from '../../shared/lib/communications';
 
 const log = createLogger('NotificationsService');
 
@@ -32,6 +33,28 @@ export class NotificationsService {
             notifications: data,
             unread_count: count || 0,
         });
+    }
+
+    /**
+     * Internal method to trigger a multi-channel notification
+     */
+    async notifyUser(userId: string, title: string, body: string, data?: any, channels: NotificationChannel[] = ['push']) {
+        return await communications.send({ userId, title, body, data, channels });
+    }
+
+    /**
+     * Send promotional broadcast from Admin
+     */
+    async sendBroadcast(input: { title: string; body: string; channels?: NotificationChannel[]; segments?: string[] }): Promise<ServiceResult<any>> {
+        log.info('Admin triggered broadcast', input);
+        
+        await communications.broadcastPromotion({
+            title: input.title,
+            body: input.body,
+            segments: input.segments
+        });
+
+        return ok({ message: 'Broadcast initiated successfully' });
     }
 
     async markAsRead(userId: string, id: string): Promise<ServiceResult<any>> {

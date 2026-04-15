@@ -1,6 +1,7 @@
 import { Router, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { supabaseAdmin } from '../lib/supabase';
+import { communications } from '../shared/lib/communications';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
 
@@ -334,6 +335,60 @@ adminRouter.get('/webhook-logs', async (req: AuthRequest, res: Response, next: N
         const { data, error } = await query;
         if (error) return res.status(500).json({ error: error.message });
         res.json({ logs: data });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// ─── Update Provider KYC ────────────────────────
+const updateKYCSchema = z.object({
+    kyc_status: z.enum(['verified', 'rejected', 'pending']),
+});
+
+adminRouter.patch('/providers/:id/kyc', validate(updateKYCSchema), async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { kyc_status } = req.body;
+
+        const { data, error } = await supabaseAdmin
+            .from('providers')
+            .update({ kyc_status, kyc_reviewed_at: new Date().toISOString() })
+            .eq('id', req.params.id)
+            .select('*, user:profiles(id, full_name)')
+            .single();
+
+        if (error || !data) return res.status(404).json({ error: 'Provider not found' });
+
+        // Notify provider about KYC status
+        await supabaseAdmin.from('notifications').insert({
+            user_id: data.user.id,
+            title: kyc_status === 'verified' ? '✅ KYC Verified!' : `KYC ${kyc_status}`,
+            message: kyc_status === 'verified'
+                ? 'Your identity has been verified. Your trust badge is now active!'
+                : 'Your KYC verification was not approved. Please resubmit your documents.',
+            type: 'system',
+        });
+
+        res.json({ provider: data });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// ─── Broadcast Notification ─────────────────────
+const broadcastSchema = z.object({
+    title: z.string().min(1),
+    body: z.string().min(1),
+    channels: z.array(z.string()).optional(),
+    segments: z.array(z.string()).optional(),
+});
+
+adminRouter.post('/notifications/broadcast', validate(broadcastSchema), async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { title, body, segments } = req.body;
+
+        await communications.broadcastPromotion({ title, body, segments });
+
+        res.json({ message: 'Broadcast initiated successfully' });
     } catch (err) {
         next(err);
     }
