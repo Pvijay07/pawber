@@ -1,6 +1,7 @@
 import { ServiceResult, ok, fail } from '../../shared/types';
 import { CreateBookingInput, CancelBookingInput, ListBookingsQuery } from './bookings.schema';
 import { loyaltyService } from '../loyalty/loyalty.service';
+import { supabaseAdmin, createLogger } from '../../shared/lib';
 
 const log = createLogger('BookingsService');
 

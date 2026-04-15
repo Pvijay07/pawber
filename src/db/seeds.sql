@@ -89,11 +89,3 @@ BEGIN
         ALTER TABLE public.services ADD COLUMN is_active BOOLEAN DEFAULT true;
     END IF;
 END $$;
-
--- Seed services
-INSERT INTO public.services (name, slug, description, category) VALUES
-('Grooming', 'grooming', 'Complete grooming and spa', 'care'),
-('Vet Visit', 'vet', 'Professional vet care', 'health'),
-('Boarding', 'boarding', 'Safe pet stays', 'stay'),
-('Dog Walking', 'walking', 'Daily exercise for your pet', 'exercise')
-ON CONFLICT (slug) DO NOTHING;
