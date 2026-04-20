@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { aiService } from './ai.service';
+import { authenticate } from '../../shared/middleware';
 import { AuthRequest, ok, fail } from '../../shared/types';
 
 const router = Router();
@@ -7,7 +8,7 @@ const router = Router();
 /**
  * POST /ai/chat
  */
-router.post('/chat', async (req: AuthRequest, res) => {
+router.post('/chat', authenticate, async (req: AuthRequest, res) => {
     if (!req.user) return res.status(401).json(fail('Unauthorized', 401));
     
     const { message } = req.body;
