@@ -94,6 +94,18 @@ export class ServicesController {
         if (result.success) return res.status(200).json({ success: true, data: result.data });
         return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
     }
+
+    async listAllPackages(_req: Request, res: Response, _next: NextFunction) {
+        const result = await servicesService.listAllPackages();
+        if (result.success) return res.status(200).json({ success: true, data: result.data });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
+    }
+
+    async listAllAddons(_req: Request, res: Response, _next: NextFunction) {
+        const result = await servicesService.listAllAddons();
+        if (result.success) return res.status(200).json({ success: true, data: result.data });
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error || 'Operation failed' } });
+    }
 }
 
 export const servicesController = new ServicesController();

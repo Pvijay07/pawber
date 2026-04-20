@@ -13,7 +13,11 @@ const router = Router();
  *   description: Pet service catalog and categories
  */
 
-// ─── Public Routes ──────────────────────────────
+// ─── Public Routes ──────────────
+
+router.get('/all/packages', authenticate, authorize('admin'), asyncHandler(servicesController.listAllPackages.bind(servicesController)));
+router.get('/all/addons', authenticate, authorize('admin'), asyncHandler(servicesController.listAllAddons.bind(servicesController)));
+
 /**
  * @swagger
  * /api/services/categories:

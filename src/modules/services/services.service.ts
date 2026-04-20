@@ -169,6 +169,26 @@ export class ServicesService {
         if (error) return fail(error.message, 500);
         return ok({ deleted: true });
     }
+
+    async listAllPackages(): Promise<ServiceResult<any>> {
+        const { data, error } = await supabaseAdmin
+            .from('service_packages')
+            .select('*, service:services(id, name)')
+            .order('created_at', { ascending: false });
+
+        if (error) return fail(error.message, 500);
+        return ok({ packages: data });
+    }
+
+    async listAllAddons(): Promise<ServiceResult<any>> {
+        const { data, error } = await supabaseAdmin
+            .from('addons')
+            .select('*, service:services(id, name)')
+            .order('created_at', { ascending: false });
+
+        if (error) return fail(error.message, 500);
+        return ok({ addons: data });
+    }
 }
 
 export const servicesService = new ServicesService();
