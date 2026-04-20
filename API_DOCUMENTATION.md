@@ -1,4 +1,4 @@
-# 🐾 PetCare (Pawber) — API Documentation
+# 🐾 Pawber (Pawber) — API Documentation
 
 > **Base URL (Production):** `https://pawber.onrender.com`  
 > **API Version:** v1  
@@ -819,7 +819,7 @@ All responses follow a consistent envelope:
 **Business Rules:**
 - One ticket per user per event
 - Checks capacity before issuing ticket
-- Generates unique QR code: `PETCARE-EVT-{eventId}-{random}`
+- Generates unique QR code: `PAWBER-EVT-{eventId}-{random}`
 
 **Success Response:** `201 Created`
 ```json
@@ -828,7 +828,7 @@ All responses follow a consistent envelope:
     "id": "uuid",
     "event_id": "uuid",
     "user_id": "uuid",
-    "qr_code": "PETCARE-EVT-abc12345-A1B2C3D4E5F6G7H8",
+    "qr_code": "PAWBER-EVT-abc12345-A1B2C3D4E5F6G7H8",
     "status": "valid",
     "created_at": "2026-03-29T00:00:00Z"
   }
@@ -853,7 +853,7 @@ All responses follow a consistent envelope:
   "tickets": [
     {
       "id": "uuid",
-      "qr_code": "PETCARE-EVT-...",
+      "qr_code": "PAWBER-EVT-...",
       "status": "valid",
       "event": {
         "title": "Paws in the Park",
@@ -875,7 +875,7 @@ All responses follow a consistent envelope:
 **Request Body:**
 ```json
 {
-  "qr_code": "PETCARE-EVT-abc12345-A1B2C3D4E5F6G7H8"
+  "qr_code": "PAWBER-EVT-abc12345-A1B2C3D4E5F6G7H8"
 }
 ```
 
@@ -1706,7 +1706,7 @@ All responses follow a consistent envelope:
 **Request Body:**
 ```json
 {
-  "qr_code": "PETCARE-EVT-abc12345-A1B2C3D4E5F6G7H8"
+  "qr_code": "PAWBER-EVT-abc12345-A1B2C3D4E5F6G7H8"
 }
 ```
 
@@ -1732,7 +1732,7 @@ All responses follow a consistent envelope:
   "success": true,
   "data": {
     "status": "ok",
-    "service": "PetCare API",
+    "service": "Pawber API",
     "version": "2.0.0",
     "timestamp": "2026-03-29T13:30:00Z",
     "environment": "production"

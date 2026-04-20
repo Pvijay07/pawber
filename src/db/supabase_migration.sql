@@ -1,5 +1,5 @@
 -- =============================================
--- Supabase Migration for PetCare
+-- Supabase Migration for Pawber
 -- Uses Supabase's built-in auth.users instead of local auth_users
 -- =============================================
 

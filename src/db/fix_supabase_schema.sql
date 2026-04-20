@@ -1,5 +1,5 @@
 -- =============================================
--- PetCare: Add missing columns to existing Supabase tables
+-- Pawber: Add missing columns to existing Supabase tables
 -- Run this in your Supabase Dashboard > SQL Editor
 -- =============================================
 

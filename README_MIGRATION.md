@@ -1,4 +1,4 @@
-# PetCare Service Catalog Migration
+# Pawber Service Catalog Migration
 
 To enable the new service packages and management features, you must apply the following SQL to your Supabase instance.
 

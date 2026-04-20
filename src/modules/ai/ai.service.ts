@@ -17,7 +17,7 @@ export class AIService {
             const context = {
                 userPets: userPets || [],
                 availableServices: services || [],
-                platform: "Pawber (PetCare Platform)"
+                platform: "Pawber (Pawber Platform)"
             };
 
             // 2. Simulated AI logic (In production, replace with LLM API call)

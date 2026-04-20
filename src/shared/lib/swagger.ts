@@ -6,11 +6,11 @@ const options: swaggerJsDoc.Options = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'PetCare API',
+            title: 'Pawber API',
             version: '4.0.0',
-            description: 'API documentation for the PetCare Marketplace platform. Includes services, bookings, providers, and more.',
+            description: 'API documentation for the Pawber Marketplace platform. Includes services, bookings, providers, and more.',
             contact: {
-                name: 'PetCare Support',
+                name: 'Pawber Support',
                 url: 'https://pawber.onrender.com'
             }
         },

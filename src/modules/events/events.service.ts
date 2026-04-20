@@ -78,7 +78,7 @@ export class EventsService {
             if ((count || 0) >= event.max_attendees) return fail('Event is sold out', 409);
         }
 
-        const qrCode = `PETCARE-EVT-${eventId.slice(0, 8)}-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
+        const qrCode = `PAWBER-EVT-${eventId.slice(0, 8)}-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
 
         const { data: ticket, error } = await supabaseAdmin
             .from('event_tickets')

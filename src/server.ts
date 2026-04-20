@@ -18,7 +18,7 @@ async function startServer() {
         }
 
         httpServer.listen(env.PORT, () => {
-            console.log(`\n🐾 PetCare API v2.0 running on http://localhost:${env.PORT}`);
+            console.log(`\n🐾 Pawber API v2.0 running on http://localhost:${env.PORT}`);
             console.log(`📋 Health check: http://localhost:${env.PORT}/health`);
             console.log(`📡 WebSocket: Enabled (Socket.io)`);
             console.log(`🔧 Environment: ${env.NODE_ENV}\n`);

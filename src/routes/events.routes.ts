@@ -103,7 +103,7 @@ eventsRouter.post('/:id/purchase', authenticate, async (req: AuthRequest, res: R
         }
 
         // Generate unique QR code
-        const qrCode = `PETCARE-EVT-${eventId.slice(0, 8)}-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
+        const qrCode = `PAWBER-EVT-${eventId.slice(0, 8)}-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
 
         // Create ticket
         const { data: ticket, error } = await supabaseAdmin

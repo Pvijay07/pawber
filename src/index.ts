@@ -3,7 +3,7 @@ import { createApp } from './app';
 import { migrate } from './db/migrate';
 
 async function bootstrap() {
-    console.log('🚀 Bootstrapping PetCare API (Legacy Index)...');
+    console.log('🚀 Bootstrapping Pawber API (Legacy Index)...');
     
     // Run migrations first
     try {
@@ -16,7 +16,7 @@ async function bootstrap() {
     const PORT = env.PORT || 4000;
 
     app.listen(PORT, () => {
-        console.log(`\n🐾 PetCare API running on http://localhost:${PORT}`);
+        console.log(`\n🐾 Pawber API running on http://localhost:${PORT}`);
         console.log(`📋 Health check: http://localhost:${PORT}/health`);
         console.log(`🔧 Environment: ${env.NODE_ENV || 'development'}\n`);
     });
