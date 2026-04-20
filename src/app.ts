@@ -22,6 +22,7 @@ import { debugRouter } from './modules/debug/debug.routes';
 import { contentRouter } from './modules/site-content.routes';
 import { loyaltyRouter } from './modules/loyalty/loyalty.routes';
 import { aiRouter } from './modules/ai/ai.routes';
+import { expansionService } from './modules/bookings/expansion.service';
 
 // ─── Legacy Module Shims (to be migrated) ───────
 import { adminRouter } from './modules/admin';
@@ -59,6 +60,9 @@ export function createApp() {
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
     app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+    
+    // Rate Limiter
+    app.use('/api', apiLimiter);
 
     // ─── API Routes (Flattened) ────────────────────
     app.use('/api/auth', authRouter);
@@ -82,9 +86,6 @@ export function createApp() {
     // ─── Swagger ────────────────────────────────────
     setupSwagger(app);
 
-    // Rate Limiter at the bottom
-    app.use('/api', apiLimiter);
-
     // ─── 404 & Error Handlers ───────────────────────
     app.use((_req, res) => {
         res.status(404).json({
@@ -93,7 +94,16 @@ export function createApp() {
         });
     });
 
-    app.use(errorHandler);
+    // ─── Background Workers ─────────────────────────
+    if (env.NODE_ENV !== 'test') {
+        const EXPANSION_INTERVAL = 60 * 1000; // Check every 1 minute
+        setInterval(() => {
+            expansionService.processDueExpansions().catch(err => {
+                console.error('Expansion Worker Error:', err);
+            });
+        }, EXPANSION_INTERVAL);
+        console.log('⚡ Expansion worker started (Interval: 1m)');
+    }
 
     return app;
 }

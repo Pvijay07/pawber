@@ -1,8 +1,14 @@
+import { createServer } from 'http';
 import { env } from './config';
 import { createApp } from './app';
 import { migrate } from './db/migrate';
+import { initializeSocket } from './shared/lib/socket';
 
 const app = createApp();
+const httpServer = createServer(app);
+
+// Initialize Socket.io
+const io = initializeSocket(httpServer);
 
 async function startServer() {
     try {
@@ -11,9 +17,10 @@ async function startServer() {
             await migrate();
         }
 
-        app.listen(env.PORT, () => {
+        httpServer.listen(env.PORT, () => {
             console.log(`\n🐾 PetCare API v2.0 running on http://localhost:${env.PORT}`);
             console.log(`📋 Health check: http://localhost:${env.PORT}/health`);
+            console.log(`📡 WebSocket: Enabled (Socket.io)`);
             console.log(`🔧 Environment: ${env.NODE_ENV}\n`);
         });
     } catch (err) {

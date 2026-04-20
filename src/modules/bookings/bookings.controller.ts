@@ -55,6 +55,28 @@ export class BookingsController {
         }
         return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
     }
+
+    async accept(req: AuthRequest, res: Response, _next: NextFunction) {
+        // Find provider profile for this user
+        const { data: provider } = await supabaseAdmin.from('providers').select('id').eq('user_id', req.user!.id).single();
+        if (!provider) return res.status(404).json({ success: false, error: { message: 'Provider profile not found' } });
+
+        const result = await bookingsService.acceptBooking(provider.id, req.params.id);
+        if (result.success) {
+            return res.status(200).json({ success: true, data: result.data });
+        }
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+    }
+
+    async confirm(req: AuthRequest, res: Response, _next: NextFunction) {
+        const result = await bookingsService.confirmPayment(req.params.id);
+        if (result.success) {
+            return res.status(200).json({ success: true, data: result.data });
+        }
+        return res.status(result.statusCode).json({ success: false, error: { message: result.error } });
+    }
 }
+
+import { supabaseAdmin } from '../../shared/lib';
 
 export const bookingsController = new BookingsController();

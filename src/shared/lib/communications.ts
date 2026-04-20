@@ -1,7 +1,18 @@
 import { createLogger } from './logger';
 import { supabaseAdmin } from './supabase';
+import { env } from '../../config';
+import { Expo } from 'expo-server-sdk';
+import { Twilio } from 'twilio';
+import { Resend } from 'resend';
 
 const log = createLogger('CommunicationsService');
+
+// Initialize clients (only once)
+const expo = new Expo({ accessToken: env.EXPO_ACCESS_TOKEN });
+const twilio = env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN 
+    ? new Twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN) 
+    : null;
+const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
 export type NotificationChannel = 'push' | 'email' | 'sms' | 'whatsapp';
 
@@ -50,7 +61,6 @@ export class CommunicationsService {
     private async sendPush(options: SendOptions) {
         const { userId, title, body, data } = options;
         
-        // 1. Get user's push tokens from database
         const { data: profile } = await supabaseAdmin
             .from('profiles')
             .select('push_token')
@@ -62,26 +72,105 @@ export class CommunicationsService {
             return { success: false, error: 'No token' };
         }
 
-        // 2. In a real app, you'd use the Expo SDK here:
-        // const expo = new Expo();
-        // await expo.sendPushNotificationsAsync([{ to: profile.push_token, title, body, data }]);
-        
-        log.info('MOCK: Push sent via Expo', { token: profile.push_token, title });
-        return { success: true };
+        if (!Expo.isExpoPushToken(profile.push_token)) {
+            log.error('Invalid push token', { token: profile.push_token });
+            return { success: false, error: 'Invalid token' };
+        }
+
+        try {
+            const messages = [{
+                to: profile.push_token,
+                sound: 'default' as const,
+                title,
+                body,
+                data: data || {},
+            }];
+            
+            // In dev without token, log only. In prod with token, send real.
+            if (!env.EXPO_ACCESS_TOKEN && env.NODE_ENV === 'development') {
+                log.info('MOCK: Push sent via Expo (Token present, but EXPO_ACCESS_TOKEN missing)', { title });
+                return { success: true };
+            }
+
+            const chunks = expo.chunkPushNotifications(messages);
+            for (const chunk of chunks) {
+                await expo.sendPushNotificationsAsync(chunk);
+            }
+            
+            log.info('Push notification sent successfully', { userId });
+            return { success: true };
+        } catch (error) {
+            log.error('Expo push error', { error });
+            return { success: false, error: 'Expo service failed' };
+        }
     }
 
     private async sendEmail(options: SendOptions) {
-        log.info('MOCK: Email sent via SendGrid/Resend', { userId: options.userId, title: options.title });
-        return { success: true };
+        const { userId, title, body } = options;
+
+        const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (!user || !user.user?.email) {
+            log.warn('User email not found', { userId });
+            return { success: false, error: 'No email found' };
+        }
+
+        if (!resend) {
+            log.info('MOCK: Email logic bypassed (RESEND_API_KEY missing)', { title, email: user.user.email });
+            return { success: true };
+        }
+
+        try {
+            await resend.emails.send({
+                from: env.FROM_EMAIL,
+                to: user.user.email,
+                subject: title,
+                text: body,
+                // html: `<p>${body}</p>` // In future, use templates
+            });
+            log.info('Email sent successfully', { email: user.user.email });
+            return { success: true };
+        } catch (error) {
+            log.error('Resend email error', { error });
+            return { success: false, error: 'Email service failed' };
+        }
     }
 
     private async sendSMS(options: SendOptions) {
-        log.info('MOCK: SMS sent via Twilio', { userId: options.userId });
-        return { success: true };
+        const { userId, body } = options;
+
+        const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('phone')
+            .eq('id', userId)
+            .single();
+
+        if (!profile?.phone) {
+            log.warn('User phone not found', { userId });
+            return { success: false, error: 'No phone found' };
+        }
+
+        if (!twilio) {
+            log.info('MOCK: SMS logic bypassed (TWILIO keys missing)', { phone: profile.phone });
+            return { success: true };
+        }
+
+        try {
+            await twilio.messages.create({
+                body,
+                from: env.TWILIO_PHONE_NUMBER,
+                to: profile.phone,
+            });
+            log.info('SMS sent successfully', { phone: profile.phone });
+            return { success: true };
+        } catch (error) {
+            log.error('Twilio SMS error', { error });
+            return { success: false, error: 'SMS service failed' };
+        }
     }
 
     private async sendWhatsApp(options: SendOptions) {
-        log.info('MOCK: WhatsApp sent via Twilio/Interakt', { userId: options.userId });
+        // Pattern: Similar to SMS but using TWILIO 'whatsapp:' prefix
+        log.info('MOCK: WhatsApp logic (Twilio WhatsApp integration pending keys)', { userId: options.userId });
         return { success: true };
     }
 
@@ -100,17 +189,13 @@ export class CommunicationsService {
         if (error) log.error('Failed to record in-app notification', { error });
     }
 
-    /**
-     * Broadcast a promotion to all users
-     */
     async broadcastPromotion(options: { title: string, body: string, segments?: string[] }) {
         log.info('Broadcasting promotion', options);
         
-        // Implementation: Fetch matching users and loop send()
         const { data: users } = await supabaseAdmin
             .from('profiles')
             .select('id')
-            .limit(100); // Batching needed for larger scales
+            .limit(100); 
 
         if (users) {
             for (const user of users) {

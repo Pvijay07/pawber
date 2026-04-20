@@ -85,4 +85,15 @@ router.patch(
     asyncHandler(bookingsController.updateStatus.bind(bookingsController))
 );
 
+router.post(
+    '/:id/accept',
+    authorize('provider', 'admin'),
+    asyncHandler(bookingsController.accept.bind(bookingsController))
+);
+
+router.post(
+    '/:id/confirm',
+    asyncHandler(bookingsController.confirm.bind(bookingsController))
+);
+
 export { router as bookingsRouter };

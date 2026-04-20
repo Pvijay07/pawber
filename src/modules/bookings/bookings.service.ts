@@ -2,6 +2,9 @@ import { ServiceResult, ok, fail } from '../../shared/types';
 import { CreateBookingInput, CancelBookingInput, ListBookingsQuery } from './bookings.schema';
 import { loyaltyService } from '../loyalty/loyalty.service';
 import { supabaseAdmin, createLogger } from '../../shared/lib';
+import { expansionService } from './expansion.service';
+import { communications } from '../../shared/lib/communications';
+import { getIO } from '../../shared/lib/socket';
 
 const log = createLogger('BookingsService');
 
@@ -114,7 +117,7 @@ export class BookingsService {
                 latitude,
                 longitude,
                 notes,
-                status: booking_type === 'instant' ? 'confirmed' : 'pending',
+                status: 'pending', // All bookings start as pending until accepted by a provider
                 is_loyalty_reward: isLoyaltyReward,
                 points_used: pointsRedeemed
             })
@@ -148,16 +151,33 @@ export class BookingsService {
             await supabaseAdmin.rpc('increment_slot_booking', { p_slot_id: slot_id });
         }
 
-        // 9. Notification
+        // 9. Expansion Logic & Initial Notification
+        // Notify providers within 5km initially
+        const categoryId = 'grooming'; // Fallback or extract from service_id
+        const providersInRange = await expansionService.findProvidersInRange(
+            Number(latitude), 
+            Number(longitude), 
+            5, 
+            categoryId
+        );
+
+        if (providersInRange.length > 0) {
+            await expansionService.notifyProviders(booking, providersInRange);
+        }
+
+        // Add to expansion queue for progressive ripple alerts
+        await expansionService.addToQueue(booking.id, booking_type as 'instant' | 'scheduled');
+
+        // 10. Notification to Client
         await supabaseAdmin.from('notifications').insert({
             user_id: userId,
-            title: 'Booking Created!',
-            message: `Your ${booking_type} booking has been created. Total: ₹${total}`,
+            title: 'Searching for Experts...',
+            message: `Your ${booking_type} booking request is broadcasted to nearby experts. We'll notify you as soon as someone accepts!`,
             type: 'booking',
             data: { booking_id: booking.id },
         });
 
-        log.info('Booking created', { bookingId: booking.id, userId, total });
+        log.info('Booking created & expansion triggered', { bookingId: booking.id, userId, providersFound: providersInRange.length });
 
         return ok({
             booking: {
@@ -265,6 +285,97 @@ export class BookingsService {
 
         log.info('Booking cancelled', { bookingId, userId });
         return ok({ booking: data, message: 'Booking cancelled successfully' });
+    }
+
+    /**
+     * Provider: Accept a pending booking request.
+     */
+    async acceptBooking(providerId: string, bookingId: string): Promise<ServiceResult<any>> {
+        // 1. Check if booking is still pending and without provider
+        const { data: booking, error: fetchError } = await supabaseAdmin
+            .from('bookings')
+            .select('*')
+            .eq('id', bookingId)
+            .single();
+
+        if (fetchError || !booking) return fail('Booking not found', 404);
+        if (booking.status !== 'pending' || booking.provider_id) {
+            return fail('Booking is no longer available or already accepted', 400);
+        }
+
+        // 2. Update booking status
+        const { data: updated, error } = await supabaseAdmin
+            .from('bookings')
+            .update({
+                provider_id: providerId,
+                status: 'accepted' // Moves to accepted, waiting for payment/confirmation
+            })
+            .eq('id', bookingId)
+            .select(`
+                *,
+                provider:providers(business_name, rating, user:profiles(full_name, avatar_url))
+            `)
+            .single();
+
+        if (error) return fail('Failed to accept booking', 500);
+
+        // 3. Stop expansion search
+        await expansionService.removeFromQueue(bookingId);
+
+        // 4. Notify Client
+        await communications.send({
+            userId: booking.user_id,
+            title: 'Expert Found! 🐾',
+            body: `${updated.provider?.business_name || 'An expert'} has accepted your request. Please complete the payment to confirm.`,
+            data: { type: 'booking_accepted', bookingId }
+        });
+
+        // 5. Emit Socket Event to Client Room
+        try {
+            getIO().to(`booking_${bookingId}`).emit('BOOKING_ACCEPTED', {
+                booking: updated
+            });
+        } catch (e) {
+            log.error('Failed to emit BOOKING_ACCEPTED socket event', { e });
+        }
+
+        log.info('Booking accepted by provider', { bookingId, providerId });
+        return ok({ booking: updated });
+    }
+
+    /**
+     * Mark booking as confirmed after payment success.
+     */
+    async confirmPayment(bookingId: string): Promise<ServiceResult<any>> {
+        const { data: booking, error } = await supabaseAdmin
+            .from('bookings')
+            .update({
+                status: 'confirmed',
+                payment_status: 'paid'
+            })
+            .eq('id', bookingId)
+            .select('*, provider:providers(user_id)')
+            .single();
+
+        if (error || !booking) return fail('Failed to confirm booking', 500);
+
+        // Notify Provider
+        if (booking.provider?.user_id) {
+            await communications.send({
+                userId: booking.provider.user_id,
+                title: 'Payment Confirmed! 💰',
+                body: 'The client has paid. You can now start the service.',
+                data: { type: 'payment_confirmed', bookingId }
+            });
+
+            // Socket Emit
+            try {
+                getIO().to(`booking_${bookingId}`).emit('PAYMENT_CONFIRMED', { bookingId });
+            } catch (e) {}
+        }
+
+        log.info('Booking payment confirmed', { bookingId });
+        return ok({ booking });
     }
 
     /**
