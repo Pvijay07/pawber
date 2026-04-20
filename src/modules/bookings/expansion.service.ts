@@ -1,4 +1,4 @@
-import { supabaseAdmin, Pool } from '../../shared/lib/supabase';
+import { supabaseAdmin } from '../../shared/lib/supabase';
 import { communications } from '../../shared/lib/communications';
 import { getIO } from '../../shared/lib/socket';
 import { createLogger } from '../../shared/lib/logger';
