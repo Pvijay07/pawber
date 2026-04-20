@@ -18,13 +18,30 @@ export class ServicesService {
     }
 
     async listServices(categoryId?: string): Promise<ServiceResult<any>> {
+        let actualCategoryId = categoryId;
+
+        // If categoryId is provided but isn't a valid UUID, try to find it by name
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (categoryId && !uuidRegex.test(categoryId)) {
+            const { data: catData } = await supabaseAdmin
+                .from('service_categories')
+                .select('id')
+                .ilike('name', `${categoryId}%`) // Partial match for 'vet' -> 'Veterinary'
+                .limit(1)
+                .single();
+            
+            if (catData) {
+                actualCategoryId = catData.id;
+            }
+        }
+
         let query = supabaseAdmin
             .from('services')
             .select('*, category:service_categories(id, name, icon_url)')
             .eq('is_active', true);
 
-        if (categoryId) {
-            query = query.eq('category_id', categoryId);
+        if (actualCategoryId) {
+            query = query.eq('category_id', actualCategoryId);
         }
 
         const { data, error } = await query.order('created_at', { ascending: false });
