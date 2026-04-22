@@ -23,6 +23,7 @@ import { contentRouter } from './modules/site-content.routes';
 import { loyaltyRouter } from './modules/loyalty/loyalty.routes';
 import { aiRouter } from './modules/ai/ai.routes';
 import { expansionService } from './modules/bookings/expansion.service';
+import { tierService } from './modules/providers/tier.service';
 
 // ─── Legacy Module Shims (to be migrated) ───────
 import { adminRouter } from './modules/admin';
@@ -103,6 +104,14 @@ export function createApp() {
             });
         }, EXPANSION_INTERVAL);
         console.log('⚡ Expansion worker started (Interval: 1m)');
+
+        const TIER_INTERVAL = 24 * 60 * 60 * 1000; // Daily check for 7-day evaluation cycle
+        setInterval(() => {
+            tierService.evaluateDueProviders().catch(err => {
+                console.error('Tier Worker Error:', err);
+            });
+        }, TIER_INTERVAL);
+        console.log('⚡ Tier evaluation worker started (Interval: 1d)');
     }
 
     return app;

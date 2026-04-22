@@ -61,4 +61,8 @@ router.post('/:id/location', authenticate, authorize('provider'), asyncHandler(a
     }
 }));
 
+router.post('/me/tier-upgrade', authenticate, authorize('provider'), asyncHandler(providersController.requestTierUpgrade.bind(providersController)));
+router.post('/me/unlock-lead', authenticate, authorize('provider'), asyncHandler(providersController.unlockLead.bind(providersController)));
+router.post('/me/purchase-subscription', authenticate, authorize('provider'), asyncHandler(providersController.purchaseSubscription.bind(providersController)));
+
 export { router as providersRouter };

@@ -5,6 +5,7 @@ import { supabaseAdmin, createLogger } from '../../shared/lib';
 import { expansionService } from './expansion.service';
 import { communications } from '../../shared/lib/communications';
 import { getIO } from '../../shared/lib/socket';
+import { tierService } from '../providers/tier.service';
 
 const log = createLogger('BookingsService');
 
@@ -65,6 +66,10 @@ export class BookingsService {
             total = total * 1.15;
         }
 
+        // Check if user is Petsfolio Plus Member
+        const { data: profile } = await supabaseAdmin.from('profiles').select('is_plus_member').eq('id', userId).single();
+        const isPlusMember = profile?.is_plus_member || false;
+
         // 3. Apply coupon
         let couponDiscount = 0;
         if (coupon_code) {
@@ -72,7 +77,15 @@ export class BookingsService {
             total -= couponDiscount;
         }
 
-        // 3a. Apply Loyalty Reward (Max ₹1500 off)
+        // 3a. Apply Petsfolio Plus Discount (10%)
+        let plusDiscount = 0;
+        if (isPlusMember) {
+            plusDiscount = total * 0.10;
+            total -= plusDiscount;
+            log.info('Petsfolio Plus 10% Discount applied', { userId, plusDiscount });
+        }
+
+        // 3b. Apply Loyalty Reward (Max ₹1500 off)
         let isLoyaltyReward = false;
         const loyaltyCheck = await loyaltyService.checkLoyaltyEligibility(userId);
         if (loyaltyCheck.isEligible) {
@@ -119,7 +132,8 @@ export class BookingsService {
                 notes,
                 status: 'pending', // All bookings start as pending until accepted by a provider
                 is_loyalty_reward: isLoyaltyReward,
-                points_used: pointsRedeemed
+                points_used: pointsRedeemed,
+                is_premium_lead: isPlusMember // Plus members create premium leads
             })
             .select()
             .single();
@@ -259,6 +273,15 @@ export class BookingsService {
             return fail('Cannot cancel a booking that is already in progress or completed', 400);
         }
 
+        // --- Petsfolio Plus Free Cancellation ---
+        const { data: profile } = await supabaseAdmin.from('profiles').select('is_plus_member').eq('id', userId).single();
+        const isPlusMember = profile?.is_plus_member || false;
+        
+        if (isPlusMember) {
+            log.info('Petsfolio Plus Free Cancellation Window used', { userId, bookingId });
+            // Typically there would be a fee calculated here, but Plus members get 0 penalty
+        }
+
         // Cancel the booking
         const { data, error } = await supabaseAdmin
             .from('bookings')
@@ -391,10 +414,17 @@ export class BookingsService {
             .from('bookings')
             .update(updateData)
             .eq('id', bookingId)
-            .select()
+            .select('*, provider:providers(tier)')
             .single();
 
         if (error || !data) return fail('Booking not found', 404);
+
+        // --- Tier System Integration ---
+        // Record strikes
+        if (status === 'cancelled') {
+            // Assume provider cancellation for demo purposes if updated via this endpoint
+            await tierService.addStrike(data.provider_id, data.id, 'cancellation');
+        }
 
         // --- Loyalty & Referral Processing on Completion ---
         if (status === 'completed' && data.total_amount > 0) {
@@ -414,6 +444,15 @@ export class BookingsService {
 
             if (count === 1) {
                 await loyaltyService.processReferralReward(data.user_id);
+            }
+
+            // Payout Logic with Multiplier
+            if (data.provider_id) {
+                const isPeak = new Date().getHours() >= 17 && new Date().getHours() <= 20; // 5 PM - 8 PM Peak
+                const multiplier = tierService.calculatePayoutMultiplier(data.provider?.tier || 3, isPeak);
+                const finalPayout = data.total_amount * multiplier; // Ignoring commission for this calculation
+                log.info(`Provider ${data.provider_id} earned ${finalPayout} (Multiplier: ${multiplier})`);
+                // This is where final payout to provider wallet/bank would happen
             }
         }
 
