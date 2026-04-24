@@ -59,6 +59,77 @@ export class AIService {
             return fail('The AI concierge is currently napping. Please try again in a bit!', 500);
         }
     }
+
+    /**
+     * AI Matching Engine: SP auto Matching to Jobs & suggesting Required SP by location.
+     * Ranks providers based on tier, rating, certification, and distance.
+     */
+    async matchProviders(jobParams: { latitude: number, longitude: number, category: string, limit?: number }): Promise<ServiceResult<any>> {
+        try {
+            // Fetch active, approved providers for this category
+            const { data: providers, error } = await supabaseAdmin
+                .from('providers')
+                .select('id, user_id, business_name, category, latitude, longitude, rating, total_reviews, tier, is_certified, is_online, status')
+                .eq('status', 'approved')
+                .eq('category', jobParams.category);
+
+            if (error || !providers) {
+                return fail('Failed to fetch providers', 500);
+            }
+
+            // Calculate distance and match score
+            const toRad = (value: number) => value * Math.PI / 180;
+            const calcDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+                const R = 6371; // km
+                const dLat = toRad(lat2 - lat1);
+                const dLon = toRad(lon2 - lon1);
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                          Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c;
+            };
+
+            const matchedProviders = providers.map(p => {
+                let distance = 0;
+                if (p.latitude && p.longitude && jobParams.latitude && jobParams.longitude) {
+                    distance = calcDistance(jobParams.latitude, jobParams.longitude, Number(p.latitude), Number(p.longitude));
+                } else {
+                    distance = 999; // unknown distance penalty
+                }
+
+                // AI Match Score Formula:
+                // Base: Rating (0-5) * 20 = Max 100
+                // Tier: Tier 1 (+30), Tier 2 (+15), Tier 3 (0)
+                // Cert: Certified (+10)
+                // Distance: -2 points per km
+                let score = (Number(p.rating || 0) * 20);
+                if (p.tier === 1) score += 30;
+                else if (p.tier === 2) score += 15;
+                if (p.is_certified) score += 10;
+                
+                score -= (distance * 2);
+
+                return {
+                    ...p,
+                    distance_km: Math.round(distance * 10) / 10,
+                    match_score: Math.max(0, Math.round(score))
+                };
+            });
+
+            // Sort so right bids come on top
+            matchedProviders.sort((a, b) => b.match_score - a.match_score);
+
+            const limit = jobParams.limit || 10;
+            return ok({
+                matches: matchedProviders.slice(0, limit)
+            });
+
+        } catch (err: any) {
+            log.error('AI Matching Error:', err);
+            return fail('Failed to match providers', 500);
+        }
+    }
 }
 
 export const aiService = new AIService();

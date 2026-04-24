@@ -51,6 +51,59 @@ adminRouter.get('/dashboard', async (_req: AuthRequest, res: Response, next: Nex
     }
 });
 
+// ─── Demand & Supply Dashboard ──────────────────
+adminRouter.get('/demand-supply', async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        // Demand: Unfulfilled/pending bookings group by service category
+        const { data: demandBookings, error: demandError } = await supabaseAdmin
+            .from('bookings')
+            .select(`
+                id,
+                status,
+                services ( category )
+            `)
+            .in('status', ['pending', 'confirmed']); // Confirmed but not started yet can also mean demand, but pending is raw demand
+
+        // Supply: Active online SPs group by category
+        const { data: supplyProviders, error: supplyError } = await supabaseAdmin
+            .from('providers')
+            .select('id, category, is_online, status')
+            .eq('status', 'approved')
+            .eq('is_online', true);
+
+        if (demandError || supplyError) {
+            return res.status(500).json({ error: 'Failed to fetch demand/supply data' });
+        }
+
+        // Aggregate Demand
+        const demandMap: Record<string, number> = {};
+        demandBookings?.forEach(b => {
+            const cat = (b.services as any)?.category || 'unknown';
+            demandMap[cat] = (demandMap[cat] || 0) + 1;
+        });
+
+        // Aggregate Supply
+        const supplyMap: Record<string, number> = {};
+        supplyProviders?.forEach(p => {
+            const cat = p.category || 'unknown';
+            supplyMap[cat] = (supplyMap[cat] || 0) + 1;
+        });
+
+        // Combine into a list
+        const categories = Array.from(new Set([...Object.keys(demandMap), ...Object.keys(supplyMap)]));
+        const dashboard = categories.map(cat => ({
+            category: cat,
+            demand: demandMap[cat] || 0,
+            supply: supplyMap[cat] || 0,
+            ratio: (supplyMap[cat] || 0) > 0 ? ((demandMap[cat] || 0) / supplyMap[cat]).toFixed(2) : 'High Demand (0 Supply)'
+        }));
+
+        res.json({ demand_supply: dashboard });
+    } catch (err) {
+        next(err);
+    }
+});
+
 // ─── List All Users ─────────────────────────────
 adminRouter.get('/users', async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {

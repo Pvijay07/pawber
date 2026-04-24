@@ -54,6 +54,13 @@ trackingRouter.post('/update', validate(updateLocationSchema), async (req: AuthR
 
         if (error) return res.status(500).json({ error: error.message });
 
+        // Mark tracking as started
+        await supabaseAdmin
+            .from('bookings')
+            .update({ tracking_started: true })
+            .eq('id', booking_id)
+            .eq('tracking_started', false);
+
         res.json({ location: data });
     } catch (err) {
         next(err);
@@ -98,7 +105,7 @@ trackingRouter.get('/booking/:bookingId/info', async (req: AuthRequest, res: Res
         const { data: booking } = await supabaseAdmin
             .from('bookings')
             .select(`
-                id, status, booking_type, booking_date, total_amount, created_at,
+                id, status, booking_type, booking_date, total_amount, tracking_started, tracking_missed, created_at,
                 service:services ( name, description ),
                 package:service_packages ( package_name, duration_minutes ),
                 provider:providers (

@@ -3,6 +3,7 @@ import { env } from './config';
 import { createApp } from './app';
 import { migrate } from './db/migrate';
 import { initializeSocket } from './shared/lib/socket';
+import { walkCronService } from './modules/bookings/cron.service';
 
 const app = createApp();
 const httpServer = createServer(app);
@@ -22,6 +23,9 @@ async function startServer() {
             console.log(`📋 Health check: http://localhost:${env.PORT}/health`);
             console.log(`📡 WebSocket: Enabled (Socket.io)`);
             console.log(`🔧 Environment: ${env.NODE_ENV}\n`);
+            
+            // Start scheduled walk reminders
+            walkCronService.start();
         });
     } catch (err) {
         console.error('Failed to start server:', err);

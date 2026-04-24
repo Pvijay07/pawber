@@ -232,6 +232,8 @@ create table if not exists bookings (
   cancelled_by uuid references profiles(id),
   cancelled_reason text,
   completed_at timestamp,
+  tracking_started boolean default false,
+  tracking_missed boolean default false,
   deleted_at timestamp,
   created_at timestamp default now()
 );
