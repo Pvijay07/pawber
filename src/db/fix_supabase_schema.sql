@@ -62,6 +62,8 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS notes text;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_by uuid;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_reason text;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS completed_at timestamp;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS tracking_started boolean DEFAULT false;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS tracking_missed boolean DEFAULT false;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS deleted_at timestamp;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS created_at timestamp DEFAULT now();
 
