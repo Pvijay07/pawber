@@ -55,8 +55,15 @@ export function createApp() {
     });
 
     // ─── Basic Middleware ───────────────────────────
-    app.use(helmet());
+    app.use((req, _res, next) => {
+        if (req.method !== 'GET') {
+            console.log(`[DEBUG] ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
+        }
+        next();
+    });
     app.use(cors(corsConfig));
+    app.options('*', cors(corsConfig)); // Explicit preflight handling
+    app.use(helmet());
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
     app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));

@@ -63,7 +63,7 @@ export class ServicesService {
             .from('service_packages')
             .select('*')
             .eq('service_id', serviceId)
-            .order('sort_order');
+            .order('price');
 
         // Fetch addons
         const { data: addons } = await supabaseAdmin
