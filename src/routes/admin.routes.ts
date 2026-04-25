@@ -77,14 +77,14 @@ adminRouter.get('/demand-supply', async (req: AuthRequest, res: Response, next: 
 
         // Aggregate Demand
         const demandMap: Record<string, number> = {};
-        demandBookings?.forEach(b => {
+        demandBookings?.forEach((b: any) => {
             const cat = (b.services as any)?.category || 'unknown';
             demandMap[cat] = (demandMap[cat] || 0) + 1;
         });
 
         // Aggregate Supply
         const supplyMap: Record<string, number> = {};
-        supplyProviders?.forEach(p => {
+        supplyProviders?.forEach((p: any) => {
             const cat = p.category || 'unknown';
             supplyMap[cat] = (supplyMap[cat] || 0) + 1;
         });

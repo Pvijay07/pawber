@@ -90,7 +90,7 @@ export class AIService {
                 return R * c;
             };
 
-            const matchedProviders = providers.map(p => {
+            const matchedProviders = providers.map((p: any) => {
                 let distance = 0;
                 if (p.latitude && p.longitude && jobParams.latitude && jobParams.longitude) {
                     distance = calcDistance(jobParams.latitude, jobParams.longitude, Number(p.latitude), Number(p.longitude));
@@ -118,7 +118,7 @@ export class AIService {
             });
 
             // Sort so right bids come on top
-            matchedProviders.sort((a, b) => b.match_score - a.match_score);
+            matchedProviders.sort((a: any, b: any) => b.match_score - a.match_score);
 
             const limit = jobParams.limit || 10;
             return ok({

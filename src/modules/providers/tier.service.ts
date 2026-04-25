@@ -40,8 +40,8 @@ export class TierService {
                 .gte('created_at', thirtyDaysAgo);
 
             const total = bookings?.length || 0;
-            const completed = bookings?.filter(b => b.status === 'completed').length || 0;
-            const cancelled = bookings?.filter(b => b.status === 'cancelled').length || 0;
+            const completed = bookings?.filter((b: any) => b.status === 'completed').length || 0;
+            const cancelled = bookings?.filter((b: any) => b.status === 'cancelled').length || 0;
             
             // Assuming we track complaints in disputes
             const { data: disputes } = await supabaseAdmin
@@ -58,7 +58,7 @@ export class TierService {
             // Repeat clients
             let repeatClientRate = 0;
             if (bookings && bookings.length > 0) {
-                const uniqueClients = new Set(bookings.map(b => b.user_id)).size;
+                const uniqueClients = new Set(bookings.map((b: any) => b.user_id)).size;
                 repeatClientRate = ((total - uniqueClients) / total) * 100;
             }
 
