@@ -50,10 +50,11 @@ export class BookingsService {
             .in('status', ['pending', 'accepted', 'confirmed', 'in_progress'])
             .is('deleted_at', null);
 
-        if (!activeError && activeBookings && activeBookings.length > 0) {
+        if (!activeError && activeBookings && (activeBookings as any[]).length > 0) {
             const conflictPets: string[] = [];
-            activeBookings.forEach((b: any) => {
-                b.booking_pets?.forEach((bp: any) => {
+            (activeBookings as any[]).forEach((b: any) => {
+                const pets = b.booking_pets as any[];
+                pets?.forEach((bp: any) => {
                     if (pet_ids.includes(bp.pet_id)) {
                         conflictPets.push(bp.pet?.name || 'Your pet');
                     }
