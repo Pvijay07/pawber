@@ -2,7 +2,7 @@
 -- Migration: Production Base Schema & Seeds
 -- =============================================
 
--- Ensure site_content table
+-- 1. Site Content Table
 CREATE TABLE IF NOT EXISTS public.site_content (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     key TEXT UNIQUE NOT NULL,
@@ -13,79 +13,59 @@ CREATE TABLE IF NOT EXISTS public.site_content (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Seed initial "How it Works" for Client
-INSERT INTO site_content (key, type, content) VALUES (
-  'client_how_it_works',
-  'steps',
-  '[
-    {"title": "Choose Service", "description": "Select from grooming, walking, vet visits, or boarding.", "icon": "Scissors"},
-    {"title": "Pick a Pro", "description": "Browse expert profiles, ratings, and book your preferred date/time.", "icon": "Users"},
-    {"title": "Relax & Track", "description": "Track the session live and pay securely via the app.", "icon": "MapPin"}
-  ]'
-) ON CONFLICT (key) DO UPDATE SET content = EXCLUDED.content;
+-- 2. Service Categories
+CREATE TABLE IF NOT EXISTS public.service_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 
--- Seed initial "How it Works" for Provider
-INSERT INTO site_content (key, type, content) VALUES (
-  'provider_how_it_works',
-  'steps',
-  '[
-    {"title": "Setup Profile", "description": "List your services, prices, and upload your certifications.", "icon": "Info"},
-    {"title": "Get Requests", "description": "Receive real-time booking requests from pet parents nearby.", "icon": "Bell"},
-    {"title": "Start Earning", "description": "Complete jobs, collect positive reviews, and withdraw earnings daily.", "icon": "Zap"}
-  ]'
-) ON CONFLICT (key) DO UPDATE SET content = EXCLUDED.content;
+ALTER TABLE public.service_categories ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
+ALTER TABLE public.service_categories ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.service_categories ADD COLUMN IF NOT EXISTS icon_url TEXT;
+ALTER TABLE public.service_categories ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;
+ALTER TABLE public.service_categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 
--- Seed Hero Banners for Client
-INSERT INTO site_content (key, type, content) VALUES (
-  'client_home_banners',
-  'banners',
-  '[
-    {
-      "title": "Professional Grooming at Home",
-      "subtitle": "Get 20% off on your first spa session",
-      "image": "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&q=80&w=800&h=400",
-      "action": "bookingFlow",
-      "serviceId": "grooming"
-    },
-    {
-      "title": "Certified Vet Consultations",
-      "subtitle": "Talk to an expert instantly",
-      "image": "https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?auto=format&fit=crop&q=80&w=800&h=400",
-      "action": "bookingFlow",
-      "serviceId": "vet"
-    }
-  ]'
-) ON CONFLICT (key) DO UPDATE SET content = EXCLUDED.content;
+-- 3. Services
+CREATE TABLE IF NOT EXISTS public.services (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES public.service_categories(id);
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 
--- 5. Ensure services table structure is up to date
-DO $$ 
-BEGIN 
-    -- Ensure table exists
-    CREATE TABLE IF NOT EXISTS public.services (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        name TEXT NOT NULL,
-        slug TEXT UNIQUE,
-        created_at TIMESTAMPTZ DEFAULT now()
-    );
+-- 4. Service Packages
+CREATE TABLE IF NOT EXISTS public.service_packages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    package_name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 
-    -- Ensure slug column exists
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='services' AND column_name='slug') THEN
-        ALTER TABLE public.services ADD COLUMN slug TEXT UNIQUE;
-    END IF;
+ALTER TABLE public.service_packages ADD COLUMN IF NOT EXISTS service_id UUID REFERENCES public.services(id) ON DELETE CASCADE;
+ALTER TABLE public.service_packages ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.service_packages ADD COLUMN IF NOT EXISTS price NUMERIC;
+ALTER TABLE public.service_packages ADD COLUMN IF NOT EXISTS duration_minutes INT;
+ALTER TABLE public.service_packages ADD COLUMN IF NOT EXISTS features TEXT[];
+ALTER TABLE public.service_packages ADD COLUMN IF NOT EXISTS is_popular BOOLEAN DEFAULT false;
+ALTER TABLE public.service_packages ADD COLUMN IF NOT EXISTS is_instant_available BOOLEAN DEFAULT true;
+ALTER TABLE public.service_packages ADD COLUMN IF NOT EXISTS is_scheduled_available BOOLEAN DEFAULT true;
+ALTER TABLE public.service_packages ADD COLUMN IF NOT EXISTS is_subscription BOOLEAN DEFAULT false;
+ALTER TABLE public.service_packages ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;
 
-    -- Ensure category column exists
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='services' AND column_name='category') THEN
-        ALTER TABLE public.services ADD COLUMN category TEXT;
-    END IF;
+-- 5. Addons
+CREATE TABLE IF NOT EXISTS public.addons (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 
-    -- Ensure description column exists
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='services' AND column_name='description') THEN
-        ALTER TABLE public.services ADD COLUMN description TEXT;
-    END IF;
-
-    -- Ensure is_active column exists
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='services' AND column_name='is_active') THEN
-        ALTER TABLE public.services ADD COLUMN is_active BOOLEAN DEFAULT true;
-    END IF;
-END $$;
+ALTER TABLE public.addons ADD COLUMN IF NOT EXISTS service_id UUID REFERENCES public.services(id) ON DELETE CASCADE;
+ALTER TABLE public.addons ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.addons ADD COLUMN IF NOT EXISTS price NUMERIC;
+ALTER TABLE public.addons ADD COLUMN IF NOT EXISTS duration_minutes INT;
+ALTER TABLE public.addons ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;

@@ -146,18 +146,29 @@ async function seedSiteContent(supabase: any) {
 }
 
 async function seedServices(supabase: any) {
+    // 1. Get categories to map slugs to IDs
+    const { data: categories } = await supabase.from('service_categories').select('id, slug');
+    const catMap = categories?.reduce((acc: any, cat: any) => ({ ...acc, [cat.slug]: cat.id }), {}) || {};
+
     const services = [
-        { name: 'Grooming', slug: 'grooming', description: 'Complete grooming and spa', category: 'care', is_active: true },
-        { name: 'Vet Visit', slug: 'vet', description: 'Professional vet care', category: 'health', is_active: true },
-        { name: 'Boarding', slug: 'boarding', description: 'Safe pet stays', category: 'stay', is_active: true },
-        { name: 'Dog Walking', slug: 'walking', description: 'Daily exercise for your pet', category: 'exercise', is_active: true }
+        { name: 'Grooming', slug: 'grooming', description: 'Complete grooming and spa', category_id: catMap['grooming'], is_active: true },
+        { name: 'Veterinary', slug: 'vet', description: 'Professional vet care', category_id: catMap['health'], is_active: true },
+        { name: 'Boarding', slug: 'boarding', description: 'Safe pet stays', category_id: catMap['stay'], is_active: true },
+        { name: 'Dog Walking', slug: 'walking', description: 'Daily exercise for your pet', category_id: catMap['exercise'], is_active: true }
     ];
 
-    const { error } = await supabase.from('services').upsert(services, { onConflict: 'slug' });
-    if (error) {
-        console.warn('  ⚠️ services seed failed:', error.message);
+    // Only upsert services that have a valid category_id
+    const validServices = services.filter(s => !!s.category_id);
+
+    if (validServices.length > 0) {
+        const { error } = await supabase.from('services').upsert(validServices, { onConflict: 'slug' });
+        if (error) {
+            console.warn('  ⚠️ services seed failed:', error.message);
+        } else {
+            console.log('  ✅ services seeded');
+        }
     } else {
-        console.log('  ✅ services seeded');
+        console.warn('  ⚠️ No valid categories found for services, skipping services seed');
     }
 }
 
