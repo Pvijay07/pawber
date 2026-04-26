@@ -446,3 +446,60 @@ adminRouter.post('/notifications/broadcast', validate(broadcastSchema), async (r
         next(err);
     }
 });
+
+// ─── Direct Assign Provider to Booking ─────────
+const assignProviderSchema = z.object({
+    provider_id: z.string().uuid(),
+});
+
+adminRouter.patch('/bookings/:id/assign', validate(assignProviderSchema), async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { provider_id } = req.body;
+        const bookingId = req.params.id;
+
+        // 1. Verify provider exists
+        const { data: provider, error: providerError } = await supabaseAdmin
+            .from('providers')
+            .select('id, business_name, user_id')
+            .eq('id', provider_id)
+            .single();
+
+        if (providerError || !provider) return res.status(404).json({ error: 'Provider not found' });
+
+        // 2. Update booking
+        const { data: booking, error: bookingError } = await supabaseAdmin
+            .from('bookings')
+            .update({ 
+                provider_id, 
+                status: 'confirmed', 
+                accepted_at: new Date().toISOString()
+            })
+            .eq('id', bookingId)
+            .select('*, service:services(name)')
+            .single();
+
+        if (bookingError || !booking) return res.status(404).json({ error: 'Booking not found' });
+
+        // 3. Notify Provider
+        await supabaseAdmin.from('notifications').insert({
+            user_id: provider.user_id,
+            title: 'New Assignment! 🎯',
+            message: `Admin has assigned you to a ${booking.service?.name || 'service'} booking.`,
+            type: 'booking',
+            data: { booking_id: bookingId }
+        });
+
+        // 4. Notify User
+        await supabaseAdmin.from('notifications').insert({
+            user_id: booking.user_id,
+            title: 'Expert Assigned! 🐾',
+            message: `Admin has assigned ${provider.business_name} to your request.`,
+            type: 'booking',
+            data: { booking_id: bookingId }
+        });
+
+        res.json({ booking, message: 'Provider assigned successfully' });
+    } catch (err) {
+        next(err);
+    }
+});
