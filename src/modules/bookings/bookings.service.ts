@@ -167,16 +167,18 @@ export class BookingsService {
 
         // 9. Expansion Logic & Initial Notification
         // Notify providers within 5km initially
-        const categoryId = 'grooming'; // Fallback or extract from service_id
+        const { data: service } = await supabaseAdmin.from('services').select('*, category:service_categories(slug)').eq('id', service_id).single();
+        const categorySlug = service?.category?.slug || 'grooming';
+        
         const providersInRange = await expansionService.findProvidersInRange(
             Number(latitude), 
             Number(longitude), 
             5, 
-            categoryId
+            categorySlug
         );
 
         if (providersInRange.length > 0) {
-            await expansionService.notifyProviders(booking, providersInRange);
+            await expansionService.notifyProviders({ ...booking, services: service }, providersInRange);
         }
 
         // Add to expansion queue for progressive ripple alerts

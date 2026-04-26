@@ -60,7 +60,7 @@ export class ExpansionService {
             .from('booking_expansion_queue')
             .select(`
                 *,
-                booking:bookings(id, latitude, longitude, service_id, booking_type, status, services(category_id, name))
+                booking:bookings(id, latitude, longitude, service_id, booking_type, status, services(id, name, category:service_categories(slug)))
             `)
             .lt('next_expansion_at', now.toISOString())
             .gt('expires_at', now.toISOString());
@@ -89,7 +89,7 @@ export class ExpansionService {
                 Number(booking.latitude), 
                 Number(booking.longitude), 
                 nextRadius, 
-                booking.services?.category_id || 'grooming'
+                booking.services?.category?.slug || 'grooming'
             );
 
             if (providers.length > 0) {
@@ -101,7 +101,7 @@ export class ExpansionService {
                 await this.removeFromQueue(item.booking_id);
             } else {
                 // Update queue for next expansion
-                const intervalMinutes = booking.booking_type === 'instant' ? 10 : 60;
+                const intervalMinutes = booking.booking_type === 'instant' ? 2 : 10;
                 const nextTime = new Date(now.getTime() + intervalMinutes * 60000);
                 
                 await supabaseAdmin
@@ -181,7 +181,7 @@ export class ExpansionService {
 
     async addToQueue(bookingId: string, type: 'instant' | 'scheduled') {
         const now = new Date();
-        const intervalMinutes = type === 'instant' ? 10 : 60;
+        const intervalMinutes = type === 'instant' ? 2 : 10;
         const expiryMinutes = type === 'instant' ? 30 : 180; // Scheduled bookings expire after 3h of no acceptance?
 
         await supabaseAdmin
