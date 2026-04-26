@@ -29,14 +29,22 @@ export class PetsService {
     }
 
     async create(userId: string, input: CreatePetInput): Promise<ServiceResult<any>> {
-        const { data, error } = await supabaseAdmin
-            .from('pets')
-            .insert({ ...input, user_id: userId })
-            .select()
-            .single();
+        try {
+            const { data, error } = await supabaseAdmin
+                .from('pets')
+                .insert({ ...input, user_id: userId })
+                .select()
+                .single();
 
-        if (error) return fail(error.message, 500);
-        return ok({ pet: data }, 201);
+            if (error) {
+                console.error('[PETS SERVICE] Insert error:', error);
+                return fail(error.message, 400);
+            }
+            return ok({ pet: data }, 201);
+        } catch (err: any) {
+            console.error('[PETS SERVICE] Critical crash:', err);
+            return fail(err.message || 'Failed to store pet in database', 500);
+        }
     }
 
     async update(userId: string, petId: string, input: UpdatePetInput): Promise<ServiceResult<any>> {

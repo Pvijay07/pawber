@@ -140,7 +140,7 @@ export class BookingsService {
 
         if (bookingError) {
             log.error('Failed to create booking', { error: bookingError });
-            return fail('Failed to create booking', 500);
+            return fail(bookingError.message || 'Failed to create booking', 500);
         }
 
         // 6. Link pets

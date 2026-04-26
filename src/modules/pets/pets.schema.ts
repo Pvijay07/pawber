@@ -5,10 +5,13 @@ export const createPetSchema = z.object({
     type: z.string().optional(),
     breed: z.string().optional(),
     age: z.string().optional(),
-    weight: z.number().min(0).optional(),
+    weight: z.number().min(0).nullable().optional(),
     medical_notes: z.string().optional(),
     vaccination_status: z.string().optional(),
     image_url: z.string().url().optional(),
+    has_insurance: z.boolean().optional(),
+    is_aggressive: z.boolean().optional(),
+    gender: z.string().optional(),
 });
 
 export const updatePetSchema = createPetSchema.partial();

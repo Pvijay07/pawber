@@ -76,6 +76,11 @@ ALTER TABLE public.addons ADD COLUMN IF NOT EXISTS price NUMERIC;
 ALTER TABLE public.addons ADD COLUMN IF NOT EXISTS duration_minutes INT;
 ALTER TABLE public.addons ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 
+-- 6. Pets Schema Update
+ALTER TABLE public.pets ADD COLUMN IF NOT EXISTS has_insurance BOOLEAN DEFAULT false;
+ALTER TABLE public.pets ADD COLUMN IF NOT EXISTS is_aggressive BOOLEAN DEFAULT false;
+ALTER TABLE public.pets ADD COLUMN IF NOT EXISTS gender TEXT DEFAULT 'Male';
+
 -- =============================================
 -- SEED DATA
 -- =============================================
