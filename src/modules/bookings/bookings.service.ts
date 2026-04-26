@@ -43,20 +43,26 @@ export class BookingsService {
         }
 
         // 1a. Check for existing active bookings for these pets & service
-        // We look for any booking that is NOT completed or cancelled
         const { data: activeBookings, error: activeError } = await supabaseAdmin
             .from('bookings')
-            .select('id, status, booking_pets(pet_id)')
+            .select('id, status, booking_pets(pet_id, pet:pets(name))')
             .eq('service_id', service_id)
             .in('status', ['pending', 'accepted', 'confirmed', 'in_progress'])
             .is('deleted_at', null);
 
-        if (!activeError && activeBookings) {
-            const blockedPetIds = activeBookings.flatMap((b: any) => b.booking_pets?.map((bp: any) => bp.pet_id) || []);
-            const conflictPets = pet_ids.filter(id => blockedPetIds.includes(id));
+        if (!activeError && activeBookings && activeBookings.length > 0) {
+            const conflictPets: string[] = [];
+            activeBookings.forEach((b: any) => {
+                b.booking_pets?.forEach((bp: any) => {
+                    if (pet_ids.includes(bp.pet_id)) {
+                        conflictPets.push(bp.pet?.name || 'Your pet');
+                    }
+                });
+            });
             
             if (conflictPets.length > 0) {
-                return fail(`One or more selected pets already have an ongoing booking for this service.`, 400);
+                const uniquePets = Array.from(new Set(conflictPets));
+                return fail(`${uniquePets.join(', ')} already ${uniquePets.length > 1 ? 'have' : 'has'} an ongoing booking or request for this service.`, 400);
             }
         }
 

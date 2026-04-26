@@ -2,6 +2,8 @@ import { supabaseAdmin } from '../../shared/lib';
 import { createLogger } from '../../shared/lib/logger';
 import { ServiceResult, ok, fail } from '../../shared/types';
 import { RegisterProviderInput, UpdateProviderInput, UploadDocInput, AddServiceInput, BlockedDateInput, BidInput } from './providers.schema';
+import { communications } from '../../shared/lib/communications';
+import { getIO } from '../../shared/lib/socket';
 
 const log = createLogger('ProvidersService');
 
@@ -243,6 +245,38 @@ export class ProvidersService {
             await supabaseAdmin.from('providers')
                 .update({ free_bids_remaining: provider.free_bids_remaining - 1 })
                 .eq('id', providerId);
+        }
+
+        // Fetch booking/request to get user_id
+        const { data: booking } = await supabaseAdmin
+            .from('bookings')
+            .select('user_id, service:services(name)')
+            .eq('id', input.request_id)
+            .single();
+
+        if (booking) {
+            // Notify Client
+            await communications.send({
+                userId: booking.user_id,
+                title: 'New Bid Received! 🏷️',
+                body: `${provider.business_name} has placed a bid of ₹${input.amount} for ${booking.service?.name || 'your request'}.`,
+                data: { 
+                    type: 'new_bid', 
+                    bookingId: input.request_id,
+                    amount: input.amount.toString(),
+                    providerName: provider.business_name
+                }
+            });
+
+            // Socket Emit
+            try {
+                getIO().to(`booking_${input.request_id}`).emit('NEW_BID', {
+                    bid: data,
+                    provider: {
+                        business_name: provider.business_name
+                    }
+                });
+            } catch (e) {}
         }
 
         return ok({ bid: data });
