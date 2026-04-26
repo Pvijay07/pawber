@@ -89,7 +89,25 @@ async function migrateSupabase() {
 
     console.log('  📝 Seeding dynamic content...');
     await seedSiteContent(supabase);
+    await seedCategories(supabase);
     await seedServices(supabase);
+}
+
+async function seedCategories(supabase: any) {
+    const categories = [
+        { name: 'Grooming', slug: 'grooming', sort_order: 1, icon_url: 'Scissors' },
+        { name: 'Veterinary', slug: 'health', sort_order: 2, icon_url: 'Heart' },
+        { name: 'Boarding', slug: 'stay', sort_order: 3, icon_url: 'Home' },
+        { name: 'Dog Walking', slug: 'exercise', sort_order: 4, icon_url: 'Zap' },
+        { name: 'Training', slug: 'training', sort_order: 5, icon_url: 'Star' }
+    ];
+
+    const { error } = await supabase.from('service_categories').upsert(categories, { onConflict: 'slug' });
+    if (error) {
+        console.warn('  ⚠️ service_categories seed failed:', error.message);
+    } else {
+        console.log('  ✅ service_categories seeded');
+    }
 }
 
 async function seedSiteContent(supabase: any) {
@@ -161,11 +179,36 @@ async function seedServices(supabase: any) {
     const validServices = services.filter(s => !!s.category_id);
 
     if (validServices.length > 0) {
-        const { error } = await supabase.from('services').upsert(validServices, { onConflict: 'slug' });
+        const { data: servData, error } = await supabase.from('services').upsert(validServices, { onConflict: 'slug' }).select();
         if (error) {
             console.warn('  ⚠️ services seed failed:', error.message);
         } else {
             console.log('  ✅ services seeded');
+            
+            // 3. Seed Packages for seeded services
+            const groom = servData.find((s: any) => s.slug === 'grooming');
+            const walk = servData.find((s: any) => s.slug === 'walking');
+            
+            if (groom) {
+                await supabase.from('service_packages').upsert([
+                    { service_id: groom.id, package_name: 'Basic Bath', price: 499, duration_minutes: 45, features: ['Bath', 'Nail Trimming'] },
+                    { service_id: groom.id, package_name: 'Full Spa', price: 999, duration_minutes: 90, features: ['Bath', 'Haircut', 'Ear Cleaning'], is_popular: true }
+                ], { onConflict: 'service_id,package_name' });
+                
+                await supabase.from('addons').upsert([
+                    { service_id: groom.id, name: 'De-shedding', price: 299, duration_minutes: 20 },
+                    { service_id: groom.id, name: 'Tick Treatment', price: 199, duration_minutes: 15 }
+                ], { onConflict: 'service_id,name' });
+            }
+
+            if (walk) {
+                await supabase.from('service_packages').upsert([
+                    { service_id: walk.id, package_name: '30 Min Walk', price: 199, duration_minutes: 30, features: ['Exercise', 'Water Break'] },
+                    { service_id: walk.id, package_name: '60 Min Walk', price: 349, duration_minutes: 60, features: ['Full Workout', 'Treats Included'] }
+                ], { onConflict: 'service_id,package_name' });
+            }
+            
+            console.log('  ✅ packages and addons seeded');
         }
     } else {
         console.warn('  ⚠️ No valid categories found for services, skipping services seed');
