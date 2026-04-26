@@ -52,7 +52,7 @@ export class BookingsService {
             .is('deleted_at', null);
 
         if (!activeError && activeBookings) {
-            const blockedPetIds = activeBookings.flatMap(b => b.booking_pets?.map((bp: any) => bp.pet_id) || []);
+            const blockedPetIds = activeBookings.flatMap((b: any) => b.booking_pets?.map((bp: any) => bp.pet_id) || []);
             const conflictPets = pet_ids.filter(id => blockedPetIds.includes(id));
             
             if (conflictPets.length > 0) {
