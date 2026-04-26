@@ -22,6 +22,13 @@ router.post('/me/services', authenticate, authorize('provider'), validate(addSer
 
 // new helper endpoints for provider features
 router.get('/me', authenticate, authorize('provider'), asyncHandler(providersController.getMe.bind(providersController)));
+router.get('/me/performance', authenticate, authorize('provider'), asyncHandler(providersController.getPerformance.bind(providersController)));
+router.get('/me/wallet', authenticate, authorize('provider'), asyncHandler(providersController.getWallet.bind(providersController)));
+router.get('/me/transactions', authenticate, authorize('provider'), asyncHandler(providersController.getTransactions.bind(providersController)));
+router.get('/me/events', authenticate, authorize('provider'), asyncHandler(providersController.getEvents.bind(providersController)));
+router.get('/me/bids', authenticate, authorize('provider'), asyncHandler(providersController.getBids.bind(providersController)));
+router.post('/me/bids', authenticate, authorize('provider'), validate(bidSchema), asyncHandler(providersController.createBid.bind(providersController)));
+
 router.get('/:id/services', asyncHandler(providersController.getServices.bind(providersController)));
 router.get('/:id/bookings', authenticate, authorize('provider'), asyncHandler(providersController.getBookings.bind(providersController)));
 router.get('/:id/bids', authenticate, authorize('provider'), asyncHandler(providersController.getBids.bind(providersController)));

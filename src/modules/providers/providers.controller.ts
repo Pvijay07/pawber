@@ -51,39 +51,54 @@ export class ProvidersController {
         return res.status(r.success ? 200 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 
+    private async resolveProviderId(req: AuthRequest): Promise<string | null> {
+        const id = req.params.id;
+        if (!id || id === 'me') {
+            if (!req.user) return null;
+            return await providersService.getProviderIdByUserId(req.user.id);
+        }
+        return id;
+    }
+
     async getServices(req: AuthRequest, res: Response, _n: NextFunction) {
-        const providerId = req.params.id || (req.user && req.user.id);
-        const r = await providersService.getServicesByProvider(providerId as string);
+        const providerId = await this.resolveProviderId(req);
+        if (!providerId) return res.status(404).json({ success: false, error: { message: 'Provider not found' } });
+        const r = await providersService.getServicesByProvider(providerId);
         return res.status(r.success ? 200 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 
     async getBookings(req: AuthRequest, res: Response, _n: NextFunction) {
-        const providerId = req.params.id || (req.user && req.user.id);
-        const r = await providersService.getBookingsByProvider(providerId as string, req.query.status as string);
+        const providerId = await this.resolveProviderId(req);
+        if (!providerId) return res.status(404).json({ success: false, error: { message: 'Provider not found' } });
+        const r = await providersService.getBookingsByProvider(providerId, req.query.status as string);
         return res.status(r.success ? 200 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 
     async getBids(req: AuthRequest, res: Response, _n: NextFunction) {
-        const providerId = req.params.id || (req.user && req.user.id);
-        const r = await providersService.getBids(providerId as string);
+        const providerId = await this.resolveProviderId(req);
+        if (!providerId) return res.status(404).json({ success: false, error: { message: 'Provider not found' } });
+        const r = await providersService.getBids(providerId);
         return res.status(r.success ? 200 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 
     async createBid(req: AuthRequest, res: Response, _n: NextFunction) {
-        const providerId = req.user!.id;
+        const providerId = await this.resolveProviderId(req);
+        if (!providerId) return res.status(404).json({ success: false, error: { message: 'Provider not found' } });
         const r = await providersService.createBid(providerId, req.body);
         return res.status(r.success ? 201 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 
     async listBlockedDates(req: AuthRequest, res: Response, _n: NextFunction) {
-        const providerId = req.params.id || (req.user && req.user.id);
-        const r = await providersService.listBlockedDates(providerId as string);
+        const providerId = await this.resolveProviderId(req);
+        if (!providerId) return res.status(404).json({ success: false, error: { message: 'Provider not found' } });
+        const r = await providersService.listBlockedDates(providerId);
         return res.status(r.success ? 200 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 
     async addBlockedDate(req: AuthRequest, res: Response, _n: NextFunction) {
-        const providerId = req.params.id || (req.user && req.user.id);
-        const r = await providersService.addBlockedDate(providerId as string, req.body);
+        const providerId = await this.resolveProviderId(req);
+        if (!providerId) return res.status(404).json({ success: false, error: { message: 'Provider not found' } });
+        const r = await providersService.addBlockedDate(providerId, req.body);
         return res.status(r.success ? 201 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 
@@ -93,31 +108,35 @@ export class ProvidersController {
     }
 
     async getPerformance(req: AuthRequest, res: Response, _n: NextFunction) {
-        const providerId = req.params.id || (req.user && req.user.id);
-        const r = await providersService.getPerformance(providerId as string);
+        const providerId = await this.resolveProviderId(req);
+        if (!providerId) return res.status(404).json({ success: false, error: { message: 'Provider not found' } });
+        const r = await providersService.getPerformance(providerId);
         return res.status(r.success ? 200 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 
     async getWallet(req: AuthRequest, res: Response, _n: NextFunction) {
-        const providerId = req.params.id || (req.user && req.user.id);
-        const r = await providersService.getWalletSummary(providerId as string);
+        const providerId = await this.resolveProviderId(req);
+        if (!providerId) return res.status(404).json({ success: false, error: { message: 'Provider not found' } });
+        const r = await providersService.getWalletSummary(providerId);
         return res.status(r.success ? 200 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 
     async getTransactions(req: AuthRequest, res: Response, _n: NextFunction) {
-        const providerId = req.params.id || (req.user && req.user.id);
+        const providerId = await this.resolveProviderId(req);
+        if (!providerId) return res.status(404).json({ success: false, error: { message: 'Provider not found' } });
         const query = {
             type: req.query.type as string,
             limit: parseInt(req.query.limit as string) || 20,
             offset: parseInt(req.query.offset as string) || 0,
         };
-        const r = await providersService.getTransactionsByProvider(providerId as string, query);
+        const r = await providersService.getTransactionsByProvider(providerId, query);
         return res.status(r.success ? 200 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 
     async getEvents(req: AuthRequest, res: Response, _n: NextFunction) {
-        const providerId = req.params.id || (req.user && req.user.id);
-        const r = await providersService.getEventsByProvider(providerId as string);
+        const providerId = await this.resolveProviderId(req);
+        if (!providerId) return res.status(404).json({ success: false, error: { message: 'Provider not found' } });
+        const r = await providersService.getEventsByProvider(providerId);
         return res.status(r.success ? 200 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 

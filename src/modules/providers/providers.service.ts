@@ -496,6 +496,16 @@ export class ProvidersService {
 
         return ok({ subscription: data, message: `Successfully activated ${planType}` });
     }
+
+    async getProviderIdByUserId(userId: string): Promise<string | null> {
+        const { data, error } = await supabaseAdmin
+            .from('providers')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+        if (error || !data) return null;
+        return data.id;
+    }
 }
 
 export const providersService = new ProvidersService();
