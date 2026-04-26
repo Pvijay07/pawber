@@ -61,6 +61,8 @@ create table if not exists pets (
   medical_notes text,
   vaccination_status text,
   image_url text,
+  has_insurance boolean default false,
+  is_aggressive boolean default false,
   deleted_at timestamp,
   created_at timestamp default now()
 );
