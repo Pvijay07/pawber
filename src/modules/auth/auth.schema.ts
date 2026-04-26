@@ -16,7 +16,7 @@ export const signInSchema = z.object({
 export const updateProfileSchema = z.object({
     full_name: z.string().min(2).optional(),
     phone: z.string().optional(),
-    avatar_url: z.string().url().optional(),
+    avatar_url: z.string().optional(),
 });
 
 export const refreshTokenSchema = z.object({

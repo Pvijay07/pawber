@@ -8,20 +8,18 @@ const whitelist = [
     'http://localhost:19006', // Expo Web (legacy)
     'http://localhost:4173',  // Vite Preview
     'https://pawber.onrender.com',
-    'https://pawber-admin.onrender.com',
-    'https://pawber-provider.onrender.com'
 ];
 
 export const corsConfig: CorsOptions = {
     origin: function (origin, callback) {
         // allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        
+
         // Normalize origin for comparison (remove trailing slashes)
         const normalizedOrigin = origin.replace(/\/$/, "");
-        
+
         const isWhitelisted = whitelist.some(item => item.replace(/\/$/, "") === normalizedOrigin);
-        
+
         if (isWhitelisted || normalizedOrigin.includes('onrender.com') || env.NODE_ENV === 'development') {
             callback(null, true);
         } else {
