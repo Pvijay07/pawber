@@ -42,6 +42,24 @@ export class BookingsService {
             return fail('Scheduled booking not available for this package', 400);
         }
 
+        // 1a. Check for existing active bookings for these pets & service
+        // We look for any booking that is NOT completed or cancelled
+        const { data: activeBookings, error: activeError } = await supabaseAdmin
+            .from('bookings')
+            .select('id, status, booking_pets(pet_id)')
+            .eq('service_id', service_id)
+            .in('status', ['pending', 'accepted', 'confirmed', 'in_progress'])
+            .is('deleted_at', null);
+
+        if (!activeError && activeBookings) {
+            const blockedPetIds = activeBookings.flatMap(b => b.booking_pets?.map((bp: any) => bp.pet_id) || []);
+            const conflictPets = pet_ids.filter(id => blockedPetIds.includes(id));
+            
+            if (conflictPets.length > 0) {
+                return fail(`One or more selected pets already have an ongoing booking for this service.`, 400);
+            }
+        }
+
         // 2. Calculate total
         let total = pkg.price * pet_ids.length;
 
