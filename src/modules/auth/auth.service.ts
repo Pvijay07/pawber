@@ -114,7 +114,7 @@ export class AuthService {
     }
 
     async updateProfile(userId: string, input: UpdateProfileInput): Promise<ServiceResult<any>> {
-        log.info('Updating profile for user:', userId, 'Data:', JSON.stringify(input));
+        log.info(`Updating profile for user ${userId}`, { input });
         const { data, error } = await supabaseAdmin
             .from('profiles')
             .update(input)

@@ -31,6 +31,7 @@ const envSchema = z.object({
     // Supabase
     SUPABASE_URL: z.string().trim().optional(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().trim().optional(),
+    SUPABASE_ANON_KEY: z.string().trim().optional(),
 
     // Communications
     EXPO_ACCESS_TOKEN: z.string().optional(),
