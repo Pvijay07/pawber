@@ -141,6 +141,33 @@ export class ProvidersService {
         return ok({ bookings: data });
     }
 
+    async getBookingDetails(userId: string, bookingId: string): Promise<ServiceResult<any>> {
+        const { data: provider } = await supabaseAdmin
+            .from('providers')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!provider) return fail('Provider profile not found', 404);
+
+        const { data, error } = await supabaseAdmin
+            .from('bookings')
+            .select(`
+                *,
+                user:profiles(full_name, phone, avatar_url),
+                service:services(name, description, image_url),
+                package:service_packages(package_name, price, duration_minutes),
+                booking_pets(pet:pets(id, name, type, breed, image_url)),
+                booking_addons(addon:addons(id, name, duration_minutes), price)
+            `)
+            .eq('id', bookingId)
+            .eq('provider_id', provider.id)
+            .single();
+
+        if (error || !data) return fail('Booking not found or not assigned to you', 404);
+        return ok({ booking: data });
+    }
+
     async addService(userId: string, input: AddServiceInput): Promise<ServiceResult<any>> {
         const { data: provider } = await supabaseAdmin
             .from('providers')

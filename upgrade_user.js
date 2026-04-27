@@ -7,9 +7,8 @@ const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function upgradeUser(email) {
-    console.log(`Searching for user with email: ${email}`);
+    console.log(`\n--- Upgrading: ${email} ---`);
     
-    // Get user by email from auth
     const { data: { users }, error: uError } = await supabase.auth.admin.listUsers();
     if (uError) {
         console.error('Error listing users:', uError);
@@ -24,19 +23,14 @@ async function upgradeUser(email) {
     
     console.log(`Found user ${user.id}. Updating role to provider...`);
     
-    // Update profile
     const { error: pError } = await supabase
         .from('profiles')
         .update({ role: 'provider' })
         .eq('id', user.id);
         
-    if (pError) {
-        console.error('Error updating profile role:', pError);
-        return;
-    }
+    if (pError) console.error('Error updating profile role:', pError);
     
-    // Check if provider record exists
-    const { data: provider, error: prError } = await supabase
+    const { data: provider } = await supabase
         .from('providers')
         .select('id')
         .eq('user_id', user.id)
@@ -50,9 +44,11 @@ async function upgradeUser(email) {
                 user_id: user.id,
                 business_name: user.user_metadata?.full_name || email.split('@')[0],
                 category: 'Pet Care',
-                address: '123 Main St',
-                city: 'Tech City',
-                is_online: true
+                address: 'Pawber Pro Office',
+                city: 'Global',
+                is_online: true,
+                status: 'approved',
+                rating: 5.0
             });
             
         if (cError) {
@@ -63,11 +59,21 @@ async function upgradeUser(email) {
     } else {
         console.log('Provider record already exists.');
     }
-    
-    console.log(`User ${email} is now a provider.`);
 }
 
-// Upgrade the likely test accounts
-upgradeUser('demo@pawber.com');
-upgradeUser('admin@petsfolio.com');
-upgradeUser('sonykatikala@gmail.com'); // guessing email from name
+async function run() {
+    const emails = [
+        'demo@pawber.com',
+        'demo1@pawber.com',
+        'testuser@pawber.com',
+        'jspvip07@gmail.com',
+        'admin@petsfolio.com'
+    ];
+    
+    for (const email of emails) {
+        await upgradeUser(email);
+    }
+    process.exit(0);
+}
+
+run();

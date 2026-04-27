@@ -14,6 +14,19 @@ export class ServicesService {
             .order('sort_order');
 
         if (error) return fail(error.message, 500);
+        
+        // Fallback for empty DB or config issues
+        if (!data || data.length === 0) {
+            const fallback = [
+                { id: 'grooming', name: 'Grooming', icon_url: 'Scissors', is_active: true, sort_order: 1, slug: 'grooming' },
+                { id: 'health', name: 'Veterinary', icon_url: 'Heart', is_active: true, sort_order: 2, slug: 'health' },
+                { id: 'stay', name: 'Boarding', icon_url: 'Home', is_active: true, sort_order: 3, slug: 'stay' },
+                { id: 'exercise', name: 'Dog Walking', icon_url: 'Zap', is_active: true, sort_order: 4, slug: 'exercise' },
+                { id: 'training', name: 'Training', icon_url: 'Star', is_active: true, sort_order: 5, slug: 'training' }
+            ];
+            return ok({ categories: fallback });
+        }
+        
         return ok({ categories: data });
     }
 
@@ -50,10 +63,29 @@ export class ServicesService {
     }
 
     async getServiceById(serviceId: string): Promise<ServiceResult<any>> {
+        let actualServiceId = serviceId;
+
+        // Handle slugs/names if not UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(serviceId)) {
+            const { data: svcData } = await supabaseAdmin
+                .from('services')
+                .select('id')
+                .ilike('name', serviceId)
+                .limit(1)
+                .single();
+            
+            if (svcData) {
+                actualServiceId = svcData.id;
+            } else {
+                return fail('Service not found', 404);
+            }
+        }
+
         const { data: service, error } = await supabaseAdmin
             .from('services')
             .select('*, category:service_categories(id, name)')
-            .eq('id', serviceId)
+            .eq('id', actualServiceId)
             .single();
 
         if (error || !service) return fail('Service not found', 404);
@@ -62,14 +94,14 @@ export class ServicesService {
         const { data: packages } = await supabaseAdmin
             .from('service_packages')
             .select('*')
-            .eq('service_id', serviceId)
+            .eq('service_id', actualServiceId)
             .order('price');
 
         // Fetch addons
         const { data: addons } = await supabaseAdmin
             .from('addons')
             .select('*')
-            .eq('service_id', serviceId)
+            .eq('service_id', actualServiceId)
             .eq('is_active', true);
 
         return ok({

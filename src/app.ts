@@ -50,8 +50,23 @@ export function createApp() {
                 version: '4.4.1',
                 timestamp: new Date().toISOString(),
                 commit: process.env.RENDER_GIT_COMMIT || 'development',
-                routes_count: routes.length
+                routes_count: routes.length,
+                supabase_mode: !!(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) ? 'real' : 'shim',
+                supabase_url: env.SUPABASE_URL
             },
+        });
+    });
+
+    app.get('/diag', (_req, res) => {
+        res.json({
+            success: true,
+            data: {
+                supabase_url: env.SUPABASE_URL,
+                url_defined: !!env.SUPABASE_URL,
+                service_key_length: env.SUPABASE_SERVICE_ROLE_KEY?.length,
+                anon_key_length: env.SUPABASE_ANON_KEY?.length,
+                node_env: env.NODE_ENV,
+            }
         });
     });
 

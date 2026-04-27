@@ -114,6 +114,7 @@ export class AuthService {
     }
 
     async updateProfile(userId: string, input: UpdateProfileInput): Promise<ServiceResult<any>> {
+        log.info('Updating profile for user:', userId, 'Data:', JSON.stringify(input));
         const { data, error } = await supabaseAdmin
             .from('profiles')
             .update(input)
@@ -121,7 +122,10 @@ export class AuthService {
             .select()
             .single();
 
-        if (error) return fail('Failed to update profile', 500);
+        if (error) {
+            log.error('Failed to update profile in Supabase:', error);
+            return fail(`Failed to update profile: ${error.message}`, 500);
+        }
         return ok({ user: data });
     }
 

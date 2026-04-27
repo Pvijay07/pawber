@@ -20,10 +20,26 @@ contentRouter.get('/homepage', async (_req: any, res: Response, next: NextFuncti
         if (error) return res.status(500).json({ error: error.message });
 
         // Map keys to object for easier consumption
-        const content = data.reduce((acc: any, item: any) => {
+        let content = data.reduce((acc: any, item: any) => {
             acc[item.key] = item.content;
             return acc;
         }, {});
+
+        // Fallback for missing critical content
+        if (!content.client_home_banners || content.client_home_banners.length === 0) {
+            content.client_home_banners = [
+                { title: 'Premium Grooming', subtitle: '30% Off this weekend', image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?q=80&w=800', action: 'bookingFlow', serviceId: 'grooming' },
+                { title: 'Expert Veterinary', subtitle: 'Certified vets at your door', image: 'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?q=80&w=800', action: 'bookingFlow', serviceId: 'health' }
+            ];
+        }
+
+        if (!content.client_how_it_works || content.client_how_it_works.length === 0) {
+            content.client_how_it_works = [
+                { title: 'Pick Service', icon: 'Scissors', description: 'Choose your need' },
+                { title: 'Choose Time', icon: 'Calendar', description: 'Schedule it' },
+                { title: 'Expert Arrives', icon: 'Heart', description: 'Pro at door' }
+            ];
+        }
 
         res.json({ content });
     } catch (err) {

@@ -15,7 +15,7 @@ async function startServer() {
     try {
         // Run migrations on startup (especially for Render/fresh environments)
         if (env.NODE_ENV !== 'test') {
-            await migrate();
+            // await migrate();
         }
 
         httpServer.listen(env.PORT, () => {

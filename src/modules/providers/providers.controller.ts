@@ -41,6 +41,11 @@ export class ProvidersController {
         return res.status(r.success ? 200 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });
     }
 
+    async getBookingDetails(req: AuthRequest, res: Response, _n: NextFunction) {
+        const result = await providersService.getBookingDetails(req.user!.id, req.params.id);
+        return res.status(result.success ? 200 : result.statusCode).json(result.success ? { success: true, data: result.data } : { success: false, error: { message: result.error } });
+    }
+
     async addService(req: AuthRequest, res: Response, _n: NextFunction) {
         const r = await providersService.addService(req.user!.id, req.body);
         return res.status(r.success ? 201 : r.statusCode).json(r.success ? { success: true, data: r.data } : { success: false, error: { message: r.error } });

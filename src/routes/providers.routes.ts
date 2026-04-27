@@ -212,6 +212,38 @@ providersRouter.get('/me/bookings', authenticate, authorize('provider'), async (
     }
 });
 
+// ─── Provider: Get Booking Details ──────────────
+providersRouter.get('/me/bookings/:id', authenticate, authorize('provider'), async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { data: provider } = await supabaseAdmin
+            .from('providers')
+            .select('id')
+            .eq('user_id', req.user!.id)
+            .single();
+
+        if (!provider) return res.status(404).json({ error: 'Provider not found' });
+
+        const { data: booking, error } = await supabaseAdmin
+            .from('bookings')
+            .select(`
+                *,
+                user:profiles(full_name, phone, avatar_url),
+                service:services(name, description, image_url),
+                package:service_packages(package_name, price, duration_minutes),
+                booking_pets(pet:pets(id, name, type, breed, image_url)),
+                booking_addons(addon:addons(id, name, duration_minutes), price)
+            `)
+            .eq('id', req.params.id)
+            .eq('provider_id', provider.id)
+            .single();
+
+        if (error || !booking) return res.status(404).json({ error: 'Booking not found or not assigned to you' });
+        res.json({ booking });
+    } catch (err) {
+        next(err);
+    }
+});
+
 // ─── Provider: Add Service ──────────────────────
 providersRouter.post('/me/services', authenticate, authorize('provider'), async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
