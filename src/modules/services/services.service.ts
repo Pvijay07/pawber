@@ -71,13 +71,14 @@ export class ServicesService {
             const { data: svcData } = await supabaseAdmin
                 .from('services')
                 .select('id')
-                .ilike('name', serviceId)
+                .or(`slug.eq.${serviceId},name.ilike.%${serviceId}%`)
                 .limit(1)
                 .single();
             
             if (svcData) {
                 actualServiceId = svcData.id;
             } else {
+                log.error(`Service slug/name not found: ${serviceId}`);
                 return fail('Service not found', 404);
             }
         }
